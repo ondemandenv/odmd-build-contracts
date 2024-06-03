@@ -18,7 +18,10 @@
 ## This is abstracted model, focus on team<-1:m->repo<-1:m->build<-1:m->service[deployment] | artifacts and providing infrastructures:
   1) describing each build's input and output and how they connected to form a dependency with code:
       1) a build can produce a value that will consume by another build, for example, networking will produce the only NAT shared by all accounts' VPC: https://github.com/ondemandenv/odmd-build-contracts/blob/ea5fd2bc92405b01006046838e5a6da3922c5afd/lib/repos/__networking/odmd-config-networking.ts#L32 and it will be consumed by eks: https://github.com/ondemandenv/odmd-build-contracts/blob/ea5fd2bc92405b01006046838e5a6da3922c5afd/lib/odmd-model/contracts-enver-eks-cluster.ts#L37 and implemented by networking code( not public yet ):  ![image](https://github.com/ondemandenv/odmd-build-contracts/assets/31018304/c84c59fe-0f1e-4700-bb9c-b0b463ca1b16) and eks code( not public yet ): ![image](https://github.com/ondemandenv/odmd-build-contracts/assets/31018304/3cc4fcce-7030-43f0-a155-af83d9985d7d)
-      2) this repo defines the 
+      2) this repo defines the truth of how each build depend on each other forming a graph of nodes connected by different relationships in Neo4j:![image](https://github.com/ondemandenv/odmd-build-contracts/assets/31018304/2d2289e6-d896-457e-94a2-531b4b35d23d)
+      3) Zoom in to networking's producers: <img width="968" alt="image" src="https://github.com/ondemandenv/odmd-build-contracts/assets/31018304/d2206fda-1cbb-48aa-9ea4-7f55df5404d5">
+
+
 
 
 
