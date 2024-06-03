@@ -1,5 +1,5 @@
 {
-  "name": "@ondemandenv/odmd-contracts",
+  "name": "@ondemandenv/odmd-build-contracts",
   "version": "1.0.0",
   "main": "index.js",
   "repository": "https://github.com/ondemandenv/odmd-build-contracts.git",
