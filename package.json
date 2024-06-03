@@ -2,7 +2,7 @@
   "name": "@ondemandenv/odmd-contracts",
   "version": "1.0.0",
   "main": "index.js",
-  "repository": "https://github.com/ondemandenv/ONDEMAND_APP_contracts.git",
+  "repository": "https://github.com/ondemandenv/odmd-build-contracts.git",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
   },
