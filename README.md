@@ -21,6 +21,10 @@
       2) this repo defines the truth of how each build depend on each other forming a graph of nodes connected by different relationships in Neo4j:![image](https://github.com/ondemandenv/odmd-build-contracts/assets/31018304/2d2289e6-d896-457e-94a2-531b4b35d23d)
       3) Zoom in to networking's producers: <img width="968" alt="image" src="https://github.com/ondemandenv/odmd-build-contracts/assets/31018304/d2206fda-1cbb-48aa-9ea4-7f55df5404d5">
   2) Mutiple versions for each build and each version can be deployed into its own environment, the springboot app has two versions/environments, both consuming IPam pool/Transit gateway from same networking version/environment, and also produce nameservers for networking to consume to delegate DNS query: <img width="961" alt="image" src="https://github.com/ondemandenv/odmd-build-contracts/assets/31018304/44f3ba46-6552-49ac-90db-5327074a56c0">
+  3) Visulize in different aspects:
+    1) Dependencies
+    2) Networking connections
+    3) IAM chains
 
 
 
