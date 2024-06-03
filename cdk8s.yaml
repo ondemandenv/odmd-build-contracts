@@ -1,0 +1,5 @@
+language: typescript
+app: npx ts-node main.ts
+imports:
+#  - k8s
+  - argocd:=https://raw.githubusercontent.com/argoproj/argo-cd/v2.9.5/manifests/install.yaml
