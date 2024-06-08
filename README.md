@@ -35,3 +35,7 @@
 
 ### 4 aws accounts in code: https://github.com/ondemandenv/odmd-build-contracts/blob/0fa6afbe76e0468db447fcd9836d015bd30050bc/lib/OndemandContracts.ts#L80 My sandbox implementation has 4 accounts when deployed:
 ![img.png](img.png)
+
+
+
+### code that deploying CDK8s's k8s manifests thru CFN service will be able to rollback, and resovling dynamic references:  ![image](https://github.com/ondemandenv/odmd-build-contracts/assets/31018304/6f5182a1-1c1f-4102-ae2c-0f03ad76b3a2)
