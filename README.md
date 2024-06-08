@@ -38,4 +38,4 @@
 
 
 
-### code that deploying CDK8s's resource like https://github.com/ondemandenv/odmd-build-contracts/blob/main/lib/repos/_default-kube-eks/odmd-enver-default-ecr-eks.ts, will be translated into k8s manifests and deploy thru CFN service resovling dynamic references:  ![image](https://github.com/ondemandenv/odmd-build-contracts/assets/31018304/6f5182a1-1c1f-4102-ae2c-0f03ad76b3a2)
+### code that deploying CDK8s's resource like https://github.com/ondemandenv/odmd-build-contracts/blob/main/lib/repos/_default-kube-eks/odmd-enver-default-ecr-eks.ts, will be translated into k8s manifests and deploy thru CFN service resovling dynamic references crossing VPCs in different accounts:  ![image](https://github.com/ondemandenv/odmd-build-contracts/assets/31018304/6f5182a1-1c1f-4102-ae2c-0f03ad76b3a2)
