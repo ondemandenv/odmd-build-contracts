@@ -15,11 +15,6 @@ test('make_sense1', () => {
     const app = new App()
     new OndemandContracts( app)
 
-    const tt = Array.from(OndemandContracts.inst.odmdBuilds).map(a => {
-        return a.toJsonStr()
-    })
-
-    console.log(tt)
 
     const toDeploy = OndemandContracts.inst.springRdsCdk.deployToSelfDefinedEcs;
 
@@ -45,7 +40,7 @@ test('make_sense1', () => {
     OndemandContracts.inst.odmdBuilds.forEach(cc => {
         cc.envers.forEach(enver => {
             if (enver instanceof ContractsEnverContainerimg) {
-                if (!enver.builtImgNameToTags) {
+                if (!enver.imageNameToExtraTags) {
                     throw new Error(`builtImgNameToTags has to be defined, but found BUILD:${enver.owner.buildId}, Branch: ${enver.targetRevision} is NOT `)
                 }
 

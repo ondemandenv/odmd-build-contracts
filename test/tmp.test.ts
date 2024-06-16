@@ -170,7 +170,7 @@ test('make_sense', () => {
         buildConfig.envers.forEach(enver => {
             if (enver instanceof ContractsEnverContainerimg) {
                 const imgConfig = enver as ContractsEnverContainerimg;
-                imgConfig.builtImgNameToTags.forEach((tags, imgName) => {
+                imgConfig.imageNameToExtraTags.forEach((tags, imgName) => {
                     if (imgName.includes('/')) {
                         throw new Error(`only img name and tag please: builtImgNameTag: ${imgName} `)
                     }

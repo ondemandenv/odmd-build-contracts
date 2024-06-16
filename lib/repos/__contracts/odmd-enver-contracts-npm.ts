@@ -10,7 +10,7 @@ export class OdmdConfigOdmdContractsNpm extends OdmdBuildOdmdContracts<Contracts
             this,
             OndemandContracts.inst.accounts.workplace1,
             'us-west-1',
-            new SRC_Rev_REF("b", "main"),
+            new SRC_Rev_REF("b", "odmdSbxUsw1"),
             [
                 'npm install',
                 'npm run clean',

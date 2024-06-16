@@ -14,16 +14,18 @@ import {AnyContractsEnVer} from "./contracts-enver";
 export class ContractsRdsCluster {
 
 
-    constructor(vpc: ContractsVpc, id: string = 'db') {
+    constructor(vpc: ContractsVpc, rdsId: string = 'db') {
         this.vpc = vpc;
+        this.rdsId = rdsId;
 
-        this.clusterIdentifier = (vpc.vpcName + '-rds-' + id).toLowerCase().replace(/[^a-z0-9\-]+/g, '')
+        this.clusterIdentifier = (vpc.vpcName + '-rds-' + rdsId).toLowerCase().replace(/[^a-z0-9\-]+/g, '')
 
-        this.rootSecretName = OdmdNames.create(vpc.build, vpc.vpcName + id + 'secret')
+        this.rootSecretName = OdmdNames.create(vpc.build, vpc.vpcName + rdsId + 'secret')
 
-        this.defaultSgName = OdmdNames.create(vpc.build, vpc.vpcName + id + 'security')
+        this.defaultSgName = OdmdNames.create(vpc.build, vpc.vpcName + rdsId + 'security')
     }
 
+    public readonly rdsId: string;
     public readonly vpc: ContractsVpc;
     public readonly clusterIdentifier: string
     public readonly rootSecretName: string;

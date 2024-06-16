@@ -4,7 +4,6 @@ import {AnyContractsEnVer, IContractsEnver} from "./contracts-enver";
 import {ApiObject, Chart} from "cdk8s";
 import {ContractsEnverEksCluster} from "./contracts-enver-eks-cluster";
 import * as yaml from 'js-yaml';
-import * as zlib from 'zlib';
 
 export function GET_EKS_MANIFEST_ROLE_PROVIDER_NAME(ownerBuildId: string, ownerRegion: string, ownerAccount: string, targetEksRev: string) {
     //The Name field of every Export member must be specified and consist only of alphanumeric characters, colons, or hyphens.
@@ -43,7 +42,7 @@ export class EksManifest extends Construct {
             serviceToken: serviceToken!,
             resourceType: 'Custom::EksManifest',
             properties: {
-                manifest: zlib.gzipSync(ymlStr).toString('base64'),
+                manifest: ymlStr.split('\n'),
                 k8sNamespace: props.k8sNamespace ?? enver.owner.buildId + '_' + enver.targetRevision,
                 targetRevision: enver.targetRevision.toString(),
 

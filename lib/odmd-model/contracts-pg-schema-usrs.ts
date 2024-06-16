@@ -23,6 +23,9 @@ export class PgSchemaUsersProps {
         if (!enver.rdsConfig) {
             throw new Error('not an OwnRds')
         }
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]{0,62}$/.test(schema)) {
+            throw new Error(`invalid schema name in enver:${enver.node.path}`)
+        }
         userSecrets.forEach(u => {
             ['app', 'migrate', 'readonly'].forEach(rl => {
                 if (u.userName == schema + '_' + rl) {

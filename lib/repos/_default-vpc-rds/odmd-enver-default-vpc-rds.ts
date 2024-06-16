@@ -41,16 +41,21 @@ export class ContractsEnverCdkDefaultVpc extends ContractsEnverCdk implements Wi
 
 
     getOrCreateRdsCluster(rdsId: string) {
-        const t = this
+        const found = this.rdsConfigs.find(r => r.rdsId == rdsId);
+        if (found != undefined) {
+            return found;
+        }
+
+        const clusterHostname = new ContractsCrossRefProducer<AnyContractsEnVer>(this, 'clusterHostname');
+        const clusterPort = new ContractsCrossRefProducer<AnyContractsEnVer>(this, 'clusterPort');
+        const clusterSocketAddress = new ContractsCrossRefProducer<AnyContractsEnVer>(this, 'clusterSocketAddress');
+
         const rdsConfig = new (class extends ContractsRdsCluster {
-            clusterHostname = new ContractsCrossRefProducer<AnyContractsEnVer>(t, 'clusterHostname')
-            clusterPort = new ContractsCrossRefProducer<AnyContractsEnVer>(t, 'clusterPort')
-            clusterSocketAddress = new ContractsCrossRefProducer<AnyContractsEnVer>(t, 'clusterSocketAddress')
+            clusterHostname = clusterHostname
+            clusterPort = clusterPort
+            clusterSocketAddress = clusterSocketAddress
         })(this.vpcConfig, rdsId)
 
-        if (this.rdsConfigs.find(r => r.clusterIdentifier == rdsConfig.clusterIdentifier) != undefined) {
-            throw new Error(`already a cluster with id: ${rdsConfig.clusterIdentifier}`)
-        }
         this.rdsConfigs.push(rdsConfig)
         return rdsConfig
     }

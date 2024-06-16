@@ -2,7 +2,6 @@ import {ContractsEnverCdk} from "./contracts-enver-cdk";
 import {ContractsCrossRefConsumer, ContractsCrossRefProducer} from "./contracts-cross-refs";
 import {IContractsEnver} from "./contracts-enver";
 import {ContractsVpc, WithVpc} from "./contracts-vpc";
-import {SimpleK8s} from "../repos/_default-kube-eks/odmd-build-default-kube-eks";
 import {ContractsBuild, SRC_Rev_REF} from "./contracts-build";
 import {OndemandContracts} from "../OndemandContracts";
 import {IPAM_AB} from "../repos/__networking/odmd-config-networking";
@@ -51,6 +50,7 @@ export abstract class ContractsEnverEksClusterArgoCd extends ContractsEnverEksCl
 export interface KubeCtlThruCentral extends IContractsEnver {
 
     readonly userEnver: IContractsEnver
-    readonly simpleK8s: SimpleK8s
+    readonly targetNamespace:string
+    readonly targetEksCluster: ContractsEnverEksCluster
 
 }

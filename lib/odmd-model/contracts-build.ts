@@ -96,23 +96,6 @@ export abstract class ContractsBuild<T extends ContractsEnver<ContractsBuild<T>>
      */
     readonly extraBuildStatement?: PolicyStatement[]
 
-    public toJsonStr() {
-        return JSON.stringify(this, (k, v) => {
-
-            if (v instanceof Node) {
-                return 'id:' + v.id
-            }
-            if (k == 'enver' && v instanceof ContractsEnverCdk) {
-                return 'enver' + v.targetRevision
-            }
-
-            if ((k == 'owner' || k == 'build') && v instanceof ContractsBuild) {
-                return 'build' + v.buildId
-            }
-
-            return v;
-        });
-    }
 
     private getPathToRoot(obj: T): object[] {
         const path = [];
