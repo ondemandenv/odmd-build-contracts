@@ -6,6 +6,7 @@ import {ContractsCrossRefConsumer, ContractsCrossRefProducer} from "../../odmd-m
 import {ContractsBuild, SRC_Rev_REF} from "../../odmd-model/contracts-build";
 import {ContractsEnverCdk} from "../../odmd-model/contracts-enver-cdk";
 import {ContractsIpAddresses, ContractsVpc, WithVpc} from "../../odmd-model/contracts-vpc";
+import {IPAM_AB} from "../__networking/odmd-config-networking";
 
 export class OdmdBuildEksCluster extends OdmdBuildEks {
 
@@ -34,19 +35,23 @@ export class EksClusterEnverArgo extends ContractsEnverEksClusterArgoCd implemen
     readonly clusterName: string
 
     readonly privateDomainName = new ContractsCrossRefProducer<ContractsEnverEksCluster>(this, 'privateDomainName')
+    readonly centralVpcCidr: ContractsCrossRefConsumer<this, IPAM_AB>;
 
     constructor(owner: ContractsBuild<ContractsEnverCdk>, id: string) {
         super(owner, OndemandContracts.inst.accounts.workplace2, 'us-west-1', new SRC_Rev_REF("b", 'odmdSbxUsw1Gyang'));
+        const ipamWest1Le = OndemandContracts.inst.networking.ipam_west1_le;
         const adr = new ContractsIpAddresses(this, new ContractsCrossRefConsumer(
-            this, this.targetRevision.toString(), OndemandContracts.inst.networking.ipam_west1_le.ipamPoolName
+            this, this.targetRevision.toString(), ipamWest1Le.ipamPoolName
         ))
         const tgw = new ContractsCrossRefConsumer(
-            this, 'tgw', OndemandContracts.inst.networking.ipam_west1_le.transitGatewayShareName
+            this, 'tgw', ipamWest1Le.transitGatewayShareName
         )
 
         this.vpcConfig = new (class extends ContractsVpc {
             transitGatewayRef = tgw;
         })(adr, 'the-vpc');
         this.clusterName = 'gyang-tst-eks-clusteragap1'
+
+        this.centralVpcCidr = new ContractsCrossRefConsumer(this, 'centralVpcCidr', ipamWest1Le.centralVpcCidr)
     }
 }

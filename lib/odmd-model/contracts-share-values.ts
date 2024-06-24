@@ -1,6 +1,6 @@
 import {Construct} from "constructs";
 import {CustomResource, Fn, Stack} from "aws-cdk-lib";
-import {ContractsCrossRefProducer} from "./contracts-cross-refs";
+import {ContractsCrossRefConsumer, ContractsCrossRefProducer} from "./contracts-cross-refs";
 import {OndemandContracts} from "../OndemandContracts";
 import {AnyContractsEnVer} from "./contracts-enver";
 
@@ -11,22 +11,22 @@ export function GET_SHARE_THRU_SSM_PROVIDER_NAME(ownerBuildId: string, ownerRegi
 
 export class ContractsShareIn extends Construct {
 
-    private readonly _refProducers: ContractsCrossRefProducer<AnyContractsEnVer>[]
+    private readonly _refConsumers: ContractsCrossRefConsumer<AnyContractsEnVer, AnyContractsEnVer>[]
     private readonly _cs: CustomResource
     private readonly _rtData: { [name: string]: string } = {}
 
-    constructor(scope: Stack, consumerBuildId: string, refProducers: ContractsCrossRefProducer<AnyContractsEnVer>[]) {
-        super(scope, 'odmd-share-in' + consumerBuildId + refProducers[0].owner.targetRevision);
+    constructor(scope: Stack, consumerBuildId: string, refConsumers: ContractsCrossRefConsumer<AnyContractsEnVer, AnyContractsEnVer>[]) {
+        super(scope, 'odmd-share-in' + consumerBuildId + refConsumers[0].producer.owner.targetRevision);
 
         let tmp: AnyContractsEnVer | undefined = undefined;
-        refProducers.forEach(p => {
-            if (tmp != undefined && tmp != p.owner) {
-                throw new Error(`One shareIn's refProducers have to share one enver but you have two: ${tmp.node.path} <=>${p.owner.node.path}`)
+        refConsumers.forEach(c => {
+            if (tmp != undefined && tmp != c.producer.owner) {
+                throw new Error(`One shareIn's refProducers have to share one enver but you have two: ${tmp.node.path} <=>${c.producer.owner.node.path}`)
             }
-            tmp = p.owner
+            tmp = c.producer.owner
         })
         const prdcrEnvr = tmp! as AnyContractsEnVer;
-        this._refProducers = refProducers;
+        this._refConsumers = refConsumers;
 
         const serviceToken = Fn.importValue(GET_SHARE_THRU_SSM_PROVIDER_NAME(consumerBuildId, scope.region, scope.account));
 
@@ -42,23 +42,25 @@ export class ContractsShareIn extends Construct {
         this.refresh();
     }
 
-    //todo: this is directly used by cdk build, how to find out the consumers using the producer?
     private refresh() {
-        const shareNameArr = this._refProducers.map(p => p.name);
-        shareNameArr.forEach(en => {
-            this._rtData[en] = this._cs.getAttString(en)
+        const nameObj = {} as { [k: string]: any }
+        this._refConsumers.forEach(c => {
+            nameObj[c.producer.name] = c.options
+            this._rtData[ c.producer.name ] = this._cs.getAttString(c.producer.name)
         })
 
         // @ts-ignore
-        this._cs.resource._cfnProperties.share_names = shareNameArr.join()
+        this._cs.resource._cfnProperties.share_names = nameObj
     }
 
-    public addRefProducer(refProducer: ContractsCrossRefProducer<AnyContractsEnVer>) {
-        if (!this._refProducers.includes(refProducer)) {
-            if (this._refProducers[0].owner != refProducer.owner) {
-                throw new Error(`One shareIn's refProducers have to share enver but you have two: ${this._refProducers[0].owner.node.path} <=>${refProducer.owner.node.path}`)
+    public addRefProducer(refConsumer: ContractsCrossRefConsumer<AnyContractsEnVer, AnyContractsEnVer>) {
+        if (!this._refConsumers.includes(refConsumer)) {
+            if (this._refConsumers[0].producer.owner != refConsumer.producer.owner) {
+                throw new Error(`One shareIn's refProducers have to share enver but you have two: ${
+                    this._refConsumers[0].producer.owner.node.path} <=>${refConsumer.producer.owner.node.path
+                }`)
             }
-            this._refProducers.push(refProducer);
+            this._refConsumers.push(refConsumer);
             this.refresh()
         }
     }

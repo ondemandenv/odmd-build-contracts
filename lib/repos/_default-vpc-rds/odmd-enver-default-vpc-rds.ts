@@ -7,19 +7,23 @@ import {ContractsCrossRefConsumer, ContractsCrossRefProducer} from "../../odmd-m
 import {AnyContractsEnVer} from "../../odmd-model/contracts-enver";
 import {PgSchemaUsersProps} from "../../odmd-model/contracts-pg-schema-usrs";
 import {SRC_Rev_REF} from "../../odmd-model/contracts-build";
+import {Accounts, OndemandContracts} from "../../OndemandContracts";
+import {IPAM_AB} from "../__networking/odmd-config-networking";
 
 export class ContractsEnverCdkDefaultVpc extends ContractsEnverCdk implements WithVpc {
-
-    readonly preCdkCmds = ['npm --prefix lib/pg-schema-role-user-cs install']
 
     readonly vpcConfig: ContractsVpc
     readonly rdsConfigs = [] as ContractsRdsCluster[]
     readonly nameServers: ContractsCrossRefProducer<ContractsEnverCdkDefaultVpc>
+    readonly centralVpcCidr: ContractsCrossRefConsumer<this, IPAM_AB>;
+    readonly rdsTrustCentralRoleName: string
 
-    constructor(owner: OdmdBuildDefaultVpcRds, clientAWSRegion: string, clientAWSAccountID: string,
-                vpc: SimpleVpc, defaultRev: SRC_Rev_REF = new SRC_Rev_REF("b", `${clientAWSRegion}_${clientAWSAccountID}_${vpc.vpcName}`
+    constructor(owner: OdmdBuildDefaultVpcRds, clientAWSRegion: string, accountKey: keyof Accounts,
+                vpc: SimpleVpc, defaultRev: SRC_Rev_REF = new SRC_Rev_REF("b", `${clientAWSRegion}_${accountKey}_${vpc.vpcName}`
             .replace(/[^a-zA-Z0-9_]/g, '_'))) {
-        super(owner, clientAWSAccountID, clientAWSRegion, defaultRev);
+        super(owner, OndemandContracts.inst.accounts[accountKey]!, clientAWSRegion, defaultRev);
+
+        this.centralVpcCidr = new ContractsCrossRefConsumer( this, 'centralVpcCidr', vpc.ipamEnver.centralVpcCidr)
 
         const adr = new ContractsIpAddresses(this, new ContractsCrossRefConsumer(
             this, 'addr', vpc.ipamEnver.ipamPoolName
@@ -36,9 +40,10 @@ export class ContractsEnverCdkDefaultVpc extends ContractsEnverCdk implements Wi
 
         this.nameServers = new ContractsCrossRefProducer(this, 'ns' + vpc.vpcName)
         vpc.ipamEnver.addSubdomainServer(vpc.vpcName + '_' + this.targetAWSAccountID, this.nameServers)
-
+        this.rdsTrustCentralRoleName = `rds_${this.targetAWSAccountID}_trustCentral_${this.targetAWSRegion}`
     }
 
+    ephemeral: boolean = false
 
     getOrCreateRdsCluster(rdsId: string) {
         const found = this.rdsConfigs.find(r => r.rdsId == rdsId);
@@ -49,11 +54,13 @@ export class ContractsEnverCdkDefaultVpc extends ContractsEnverCdk implements Wi
         const clusterHostname = new ContractsCrossRefProducer<AnyContractsEnVer>(this, 'clusterHostname');
         const clusterPort = new ContractsCrossRefProducer<AnyContractsEnVer>(this, 'clusterPort');
         const clusterSocketAddress = new ContractsCrossRefProducer<AnyContractsEnVer>(this, 'clusterSocketAddress');
+        const clusterMasterRoleArn = new ContractsCrossRefProducer<AnyContractsEnVer>(this, 'clusterMasterRoleArn');
 
         const rdsConfig = new (class extends ContractsRdsCluster {
             clusterHostname = clusterHostname
             clusterPort = clusterPort
             clusterSocketAddress = clusterSocketAddress
+            clusterMasterRoleArn = clusterMasterRoleArn
         })(this.vpcConfig, rdsId)
 
         this.rdsConfigs.push(rdsConfig)

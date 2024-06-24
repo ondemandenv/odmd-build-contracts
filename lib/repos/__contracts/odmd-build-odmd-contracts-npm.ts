@@ -15,9 +15,11 @@ export class OdmdConfigOdmdContractsNpm extends OdmdBuildOdmdContracts<Contracts
                 'npm install',
                 'npm run clean',
                 'npm run build',
-                'echo "@ondemandenv:registry=https://npm.pkg.github.com/" >> .npmrc',
-                'echo "//npm.pkg.github.com/:_authToken=$github_token" >> .npmrc',
                 'npm publish',
+                // 'npm publish --tag $GITHUB_SHA',
+                'git config user.name "github-actions[bot]"',
+                'git config user.email "bot@ondemandenv.dev"',
+                'VERSION=$(jq -r \'.version\' package.json) && git tag -a "v$VERSION" -m "odmd" && git push origin "v$VERSION"',
             ]
         )
     ];
@@ -27,3 +29,10 @@ export class OdmdConfigOdmdContractsNpm extends OdmdBuildOdmdContracts<Contracts
     }
 
 }
+/*
+*
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ steps.get_version.outputs.version }}" -m "Release ${{ steps.get_version.outputs.version }}"
+          git push origin --tags*/

@@ -30,7 +30,10 @@ export class ContractsCrossRefProducer<T extends AnyContractsEnVer> extends Cons
 
 export class ContractsCrossRefConsumer<C extends AnyContractsEnVer, P extends AnyContractsEnVer> extends Construct {
 
-    constructor(scope: C, id: string, producer: ContractsCrossRefProducer<P>) {
+    constructor(scope: C, id: string, producer: ContractsCrossRefProducer<P>, options: {
+        defaultIfAbsent: any,
+        triggerOnChange: boolean//trigger consumer stack deployment on change
+    } = {triggerOnChange: true, defaultIfAbsent: '__dummy'}) {
         super(scope, id);
         if (!producer.consumers.has(this)) {
             producer.consumers.set(this, new Set())
@@ -41,6 +44,7 @@ export class ContractsCrossRefConsumer<C extends AnyContractsEnVer, P extends An
         }
         bySet.add(this.node.path)
         this._producer = producer
+        this._options = options
     }
 
     public get owner(): C {
@@ -50,6 +54,15 @@ export class ContractsCrossRefConsumer<C extends AnyContractsEnVer, P extends An
     private readonly _producer: ContractsCrossRefProducer<P>;
     public get producer(): ContractsCrossRefProducer<P> {
         return this._producer
+    }
+
+    private readonly _options: {
+        defaultIfAbsent: any,
+        triggerOnChange: boolean//trigger consumer stack deployment on change
+    } | undefined = undefined
+
+    public get options() {
+        return this._options
     }
 
     public toOdmdRef(): string {
@@ -71,7 +84,7 @@ export class ContractsCrossRefConsumer<C extends AnyContractsEnVer, P extends An
         }
 
         const tmp = s.substring(this.OdmdRef_prefix.length + 2)
-        const targetPath = tmp.substring(0,tmp.indexOf("}"));
+        const targetPath = tmp.substring(0, tmp.indexOf("}"));
 
         for (const b of OndemandContracts.inst.odmdBuilds) {
             const f = b.node.findAll().find(e => e.node.path == targetPath)
@@ -90,9 +103,9 @@ export class ContractsCrossRefConsumer<C extends AnyContractsEnVer, P extends An
     public getSharedValue(stack: Stack): string {
         const key = OdmdNames.create(this._producer.owner, stack.stackName);
         if (!ContractsCrossRefConsumer._sharingIns.has(key)) {
-            ContractsCrossRefConsumer._sharingIns.set(key, new ContractsShareIn(stack, this.owner.owner.buildId, [this._producer]))
+            ContractsCrossRefConsumer._sharingIns.set(key, new ContractsShareIn(stack, this.owner.owner.buildId, [this]))
         } else {
-            ContractsCrossRefConsumer._sharingIns.get(key)!.addRefProducer(this._producer)
+            ContractsCrossRefConsumer._sharingIns.get(key)!.addRefProducer(this)
         }
         return ContractsCrossRefConsumer._sharingIns.get(key)!.getShareValue(this._producer);
     }

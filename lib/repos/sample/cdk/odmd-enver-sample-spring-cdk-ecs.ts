@@ -23,7 +23,6 @@ export class OdmdEnverSampleSpringCdkEcs extends ContractsEnverCdk implements Bo
     public readonly readOnlyPub: PgUsr
 
 
-    readonly preCdkCmds?: Array<string>
     readonly imgSrcEnver
 
     readonly rdsPort: ContractsCrossRefConsumer<OdmdEnverSampleSpringCdkEcs, AnyContractsEnVer>
@@ -58,9 +57,9 @@ export class OdmdEnverSampleSpringCdkEcs extends ContractsEnverCdk implements Bo
         this.rdsPort = new ContractsCrossRefConsumer<OdmdEnverSampleSpringCdkEcs, any>(this, 'rdsPort', this.rdsConfig.clusterPort)
         this.rdsHost = new ContractsCrossRefConsumer<OdmdEnverSampleSpringCdkEcs, any>(this, 'rdsHost', this.rdsConfig.clusterHostname)
         this.rdsSocketAddress = new ContractsCrossRefConsumer<OdmdEnverSampleSpringCdkEcs, any>(this, 'rdsSocketAddress', this.rdsConfig.clusterSocketAddress)
-        this.rdsUsrReadOnly = new ContractsCrossRefConsumer<OdmdEnverSampleSpringCdkEcs, any>(this, 'rdsUsrReadOnly', this.rdsConfig.usernameToSecretId.get( this.readOnlyPub.userName )! )
+        this.rdsUsrReadOnly = new ContractsCrossRefConsumer<OdmdEnverSampleSpringCdkEcs, any>(this, 'rdsUsrReadOnly', this.rdsConfig.usernameToSecretId.get(this.readOnlyPub.userName)!)
 
-        this.preCdkCmds = ['npm run build']
+        this.preCdkCmds.push('npm run build')
         this.imgSrcEnver = OndemandContracts.inst.springRdsImg.enverImg;
 
         this.migImgName = new ContractsCrossRefConsumer<OdmdEnverSampleSpringCdkEcs, any>(this, 'migImgName', this.imgSrcEnver.migImgRefProducer)

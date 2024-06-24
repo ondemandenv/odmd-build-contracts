@@ -1,11 +1,14 @@
 import {Construct} from "constructs";
 import {CustomResource, Fn, Stack} from "aws-cdk-lib";
-import {OdmdNames} from "./contracts-cross-refs";
+import {ContractsCrossRefConsumer, OdmdNames} from "./contracts-cross-refs";
 import {WithRds} from "./contracts-rds-cluster";
+import {AnyContractsEnVer} from "./contracts-enver";
+import {IPAM_AB} from "../repos/__networking/odmd-config-networking";
 
-export function GET_PG_USR_ROLE_PROVIDER_NAME(ownerBuildId: string, ownerRegion: string, ownerAccount: string, vpcName: string) {
+export function GET_PG_USR_ROLE_PROVIDER_NAME(ownerBuildId: string, ownerRegion: string, ownerAccount: string,
+                                              ipam: ContractsCrossRefConsumer<AnyContractsEnVer, IPAM_AB>) {
     //The Name field of every Export member must be specified and consist only of alphanumeric characters, colons, or hyphens.
-    return `odmd-ctl-${ownerBuildId}-${ownerRegion}-${ownerAccount}-${vpcName}:pg_usr_role-provider`.replace(/[^a-zA-Z0-9:-]/g, '-');
+    return `odmd-ctl-${ownerBuildId}-${ownerRegion}-${ownerAccount}-${ipam.toOdmdRef()}:pg_usr_role-provider`.replace(/[^a-zA-Z0-9:-]/g, '-');
 }
 
 export type PgUsr = {
@@ -68,18 +71,26 @@ export class PgSchemaUsers extends Construct {
         }
 
         if (!serviceToken) {
-            //will pass the lambda of the rds
-            serviceToken = Fn.importValue(GET_PG_USR_ROLE_PROVIDER_NAME(props.enver.vpcConfig.build.buildId, scope.region,
-                scope.account, props.enver.vpcConfig?.vpcName!));
+            serviceToken = Fn.importValue(GET_PG_USR_ROLE_PROVIDER_NAME(props.enver.vpcConfig.build.buildId, scope.region, scope.account, props.enver.vpcConfig.ipAddresses.ipv4IpamPoolRef));
         }
 
+        const clusterHostname = new ContractsCrossRefConsumer(props.enver, 'clusterHostname', props.enver.rdsConfig.clusterHostname).getSharedValue(scope)
+        const clusterPort = new ContractsCrossRefConsumer(props.enver, 'clusterPort', props.enver.rdsConfig.clusterPort).getSharedValue(scope)
+        const clusterSocketAddress = new ContractsCrossRefConsumer(props.enver, 'clusterSocketAddress', props.enver.rdsConfig.clusterSocketAddress).getSharedValue(scope)
+        const clusterMasterRoleArn = new ContractsCrossRefConsumer(props.enver, 'clusterMasterRoleArn', props.enver.rdsConfig.clusterMasterRoleArn).getSharedValue(scope)
         let schrole: CustomResource | undefined
         if (newSchema) {
             schrole = new CustomResource(this, `rds-usr-${props.schema}`, {
                 serviceToken,
                 resourceType: 'Custom::OdmdPgSchRole',
                 properties: {
-                    // rds: props.enver.rdsConfig.clusterIdentifier,
+                    clusterHostname,
+                    clusterPort,
+                    clusterSocketAddress,
+                    clusterMasterRoleArn,
+                    adminSecretId: props.enver.rdsConfig.rootSecretName,
+                    secretPath: 'odmd/' + props.enver.vpcConfig.build.buildId + '/' + props.enver.rdsConfig.clusterIdentifier,
+                    databaseName: props.enver.rdsConfig.defaultDatabaseName,
                     schemaName: props.schema
                 }
             })
@@ -101,7 +112,13 @@ export class PgSchemaUsers extends Construct {
                 serviceToken: serviceToken!,
                 resourceType: 'Custom::OdmdPgUser',
                 properties: {
-                    // rds: props.enver.rdsConfig.clusterIdentifier,
+                    clusterHostname,
+                    clusterPort,
+                    clusterSocketAddress,
+                    clusterMasterRoleArn,
+                    adminSecretId: props.enver.rdsConfig.rootSecretName,
+                    secretPath: 'odmd/' + props.enver.vpcConfig.build.buildId + '/' + props.enver.rdsConfig.clusterIdentifier,
+                    databaseName: props.enver.rdsConfig.defaultDatabaseName,
                     schemaName: props.schema,
                     roleType: u.roleType,
                     userName: u.userName

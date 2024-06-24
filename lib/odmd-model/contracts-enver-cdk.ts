@@ -13,7 +13,11 @@ export class ContractsEnverCdk extends ContractsEnver<ContractsBuild<ContractsEn
     //todo
     readonly approvalRole?: string//will be used when len > 3
 
-    readonly preCdkCmds?: Array<string>
+    readonly preCdkCmds: Array<string> = [
+        //todo: get the org dynamically
+        'echo "@ondemandenv:registry=https://npm.pkg.github.com/" >> .npmrc',
+        'echo "//npm.pkg.github.com/:_authToken=$github_token" >> .npmrc'
+    ]
 
     readonly contextStrs?: Array<string>
 

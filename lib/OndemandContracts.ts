@@ -1,6 +1,4 @@
 import {Construct} from "constructs";
-import {OdmdConfigOdmdContractsCdk} from "./repos/__contracts/odmd-enver-contracts-cdk";
-import {OdmdConfigOdmdContractsNpm} from "./repos/__contracts/odmd-enver-contracts-npm";
 import {OdmdConfigNetworking} from "./repos/__networking/odmd-config-networking";
 import {OdmdBuildEksCluster} from "./repos/__eks/odmd-build-eks-cluster";
 import {OdmdBuildDefaultVpcRds} from "./repos/_default-vpc-rds/odmd-build-default-vpc-rds";
@@ -9,6 +7,10 @@ import {OdmdBuildSampleSpringImg} from "./repos/sample/spring-img/odmd-build-sam
 import {AnyContractsEnVer} from "./odmd-model/contracts-enver";
 import {ContractsBuild, GithubRepo, SRC_Rev_REF} from "./odmd-model/contracts-build";
 import {OdmdBuildDefaultKubeEks} from "./repos/_default-kube-eks/odmd-build-default-kube-eks";
+import {App, Aspects} from "aws-cdk-lib";
+import {ContractsAspect} from "./odmd-model/contracts-aspect";
+import {OdmdConfigOdmdContractsCdk} from "./repos/__contracts/odmd-build-odmd-contracts-cdk";
+import {OdmdConfigOdmdContractsNpm} from "./repos/__contracts/odmd-build-odmd-contracts-npm";
 
 
 type GithubRepos = {
@@ -20,7 +22,7 @@ type GithubRepos = {
     sample: GithubRepo
 }
 
-type Accounts = {
+export type Accounts = {
     central: string,
     networking: string,
     workplace1: string,
@@ -32,6 +34,11 @@ export class OndemandContracts extends Construct {
     static readonly RES_PREFIX = "odmd-"
     static readonly REGEX_DBClusterIdentifier = /^[a-z](?:(?![-]{2,})[a-z0-9-]){1,62}(?<!-)$/
     static readonly REGEX_DabaseName = /^[A-Za-z_][A-Za-z0-9_$]{0,62}$/
+    static readonly STACK_PARAM_ODMD_DEP_REV = 'odmdDepRev'
+    static readonly STACK_PARAM_ODMD_BUILD = 'odmdBuildId'
+    static readonly STACK_PARAM_BUILD_SRC_REV = 'buildSrcRev'
+    static readonly STACK_PARAM_BUILD_SRC_REF = 'buildSrcRef'
+    static readonly STACK_PARAM_BUILD_SRC_REPO = 'buildSrcRepo'
 
     public readonly odmdConfigOdmdContractsCdk
     public readonly odmdConfigOdmdContractsNpm
@@ -68,14 +75,14 @@ export class OndemandContracts extends Construct {
         return process.env[this.REV_REF_name]!
     }
 
-
-    constructor(root: Construct, accountOverriding: Accounts | undefined = undefined,
+    constructor(app: App, accountOverriding: Accounts | undefined = undefined,
                 srcReposOverriding: GithubRepos | undefined = undefined, buildIdToRevRefs: Map<string, SRC_Rev_REF[]> | undefined = undefined) {
-        super(root, 'ondemandenv');
+        super(app, 'ondemandenv');
         if (OndemandContracts._inst) {
             throw new Error(`can't init twice`)
         }
         OndemandContracts._inst = this
+        Aspects.of(app).add(new ContractsAspect())
 
         this.accounts = {
             central: '1111central111',
@@ -108,12 +115,12 @@ export class OndemandContracts extends Construct {
             this.githubRepos = JSON.parse(Buffer.from(process.env.ODMD_GH_REPOS, 'base64').toString("utf-8")) as GithubRepos
         } else {
             this.githubRepos = {
-                __contracts: {owner: 'odmd', repo: '', ghAppInstallID: 1234},
-                __eks: {owner: 'odmd', repo: '', ghAppInstallID: 1234},
-                __networking: {owner: 'odmd', repo: '', ghAppInstallID: 1234},
-                _defaultKubeEks: {owner: 'odmd', repo: '', ghAppInstallID: 1234},
-                _defaultVpcRds: {owner: 'odmd', repo: '', ghAppInstallID: 1234},
-                sample: {owner: 'odmd', repo: '', ghAppInstallID: 1234},
+                __contracts: {owner: 'odmd', repo: 'contracts', ghAppInstallID: 1234},
+                __eks: {owner: 'odmd', repo: 'eks', ghAppInstallID: 1234},
+                __networking: {owner: 'odmd', repo: 'networking', ghAppInstallID: 1234},
+                _defaultKubeEks: {owner: 'odmd', repo: 'defaultKubeEks', ghAppInstallID: 1234},
+                _defaultVpcRds: {owner: 'odmd', repo: 'defaultVpcRds', ghAppInstallID: 1234},
+                sample: {owner: 'odmd', repo: 'sample', ghAppInstallID: 1234},
 
             }
         }

@@ -6,11 +6,17 @@ export class ContractsEnverNpm extends ContractsEnver<ContractsBuild<ContractsEn
 
     constructor(owner: ContractsBuild<ContractsEnverNpm>, targetAWSAccountID: string, targetAWSRegion: string, targetRevision: SRC_Rev_REF, buildCmds: string[] | undefined = undefined) {
         super(owner, targetAWSAccountID, targetAWSRegion, targetRevision);
-        this.buildCmds = buildCmds;
+        if (buildCmds) {
+            this.buildCmds.push(...buildCmds);
+        }
     }
 
 //Make sure WF has enough permission:  https://github.com/orgs/${organization}/packages/npm/${repo}/settings
-    readonly buildCmds: string[] | undefined = undefined;
+    readonly buildCmds = [
+        //todo: get the org dynamically
+        'echo "@ondemandenv:registry=https://npm.pkg.github.com/" >> .npmrc',
+        'echo "//npm.pkg.github.com/:_authToken=$github_token" >> .npmrc'
+    ]
 
     /**
      * `$(jq -r '.version' package.json | cut -d'-' -f1)-${branch}$(date +'%Y%m%d_%H%M%S')`

@@ -8,7 +8,7 @@ import {
 import {RemovalPolicy} from "aws-cdk-lib";
 import {PgSchemaUsersProps} from "./contracts-pg-schema-usrs";
 import {ContractsVpc, WithVpc} from "./contracts-vpc";
-import {ContractsCrossRefProducer, OdmdNames} from "./contracts-cross-refs";
+import {ContractsCrossRefConsumer, ContractsCrossRefProducer, OdmdNames} from "./contracts-cross-refs";
 import {AnyContractsEnVer} from "./contracts-enver";
 
 export class ContractsRdsCluster {
@@ -24,6 +24,15 @@ export class ContractsRdsCluster {
 
         this.defaultSgName = OdmdNames.create(vpc.build, vpc.vpcName + rdsId + 'security')
     }
+
+    public addAllowProducer(producer: ContractsCrossRefProducer<AnyContractsEnVer>) {
+        this.allowingCIDRS.push(new ContractsCrossRefConsumer(this.vpc.ipAddresses.enver, producer.name, producer, {
+            defaultIfAbsent: '0.0.0.0/32',
+            triggerOnChange: true
+        }))
+    }
+
+    public readonly allowingCIDRS: Array<ContractsCrossRefConsumer<AnyContractsEnVer, AnyContractsEnVer>> = []
 
     public readonly rdsId: string;
     public readonly vpc: ContractsVpc;
@@ -43,6 +52,7 @@ export class ContractsRdsCluster {
     public readonly clusterHostname: ContractsCrossRefProducer<AnyContractsEnVer>
     public readonly clusterPort: ContractsCrossRefProducer<AnyContractsEnVer>
     public readonly clusterSocketAddress: ContractsCrossRefProducer<AnyContractsEnVer>
+    public readonly clusterMasterRoleArn: ContractsCrossRefProducer<AnyContractsEnVer>
     // public readonly clusterReadHostname: ContractsCrossRefProducer<AnyContractsEnVer>
     // public readonly clusterReadPort: ContractsCrossRefProducer<AnyContractsEnVer>
     // public readonly clusterReadSocketAddress: ContractsCrossRefProducer<AnyContractsEnVer>

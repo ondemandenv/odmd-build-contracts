@@ -15,6 +15,7 @@ import {AnyContractsEnVer, ContractsEnver} from "./contracts-enver";
 import {ContractsEnverCdk} from "./contracts-enver-cdk";
 import {ContractsEnverContainerimg} from "./contracts-enver-containerImg";
 import {ContractsEnverNpm} from "./contracts-enver-npm";
+import {OndemandContracts} from "../OndemandContracts";
 
 type CentralConfigConstr = new (...args: any[]) => ContractsBuild<AnyContractsEnVer>;
 
@@ -147,6 +148,13 @@ export class SRC_Rev_REF {
         if (value.includes(':') || value.includes('@')) {
             throw new Error('n/a')
         }
+
+        OndemandContracts.inst.allAccounts.forEach(ac => {
+            if (value.includes(ac)) {
+                throw new Error(`${ac} is an account and should not be used in revRef!`)
+            }
+        })
+
         if (origin) {
             if (origin.includes('@')) {
                 throw new Error(`Illegal origin: ${origin}, origin can't have origin`)
@@ -162,5 +170,25 @@ export class SRC_Rev_REF {
 
     toString() {
         return this.type + ':' + this.value + (this.origin ? `@${this.origin}` : '');
+    }
+
+    /**
+     *
+     * Parameter names are case sensitive.
+     *
+     * A parameter name must be unique within an AWS Region
+     *
+     * A parameter name can't be prefixed with "aws" or "ssm" (case-insensitive).
+     *
+     * Parameter names can include only the following symbols and letters: a-zA-Z0-9_.-
+     *
+     * In addition, the slash character ( / ) is used to delineate hierarchies in parameter names. For example: /Dev/Production/East/Project-ABC/MyParameter
+     *
+     * A parameter name can't include spaces.
+     *
+     * Parameter hierarchies are limited to a maximum depth of fifteen levels.
+     */
+    toPathPartStr() {
+        return this.type == 'b' ? this.value : this.type + '.' + this.value;
     }
 }

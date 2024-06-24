@@ -39,18 +39,21 @@ export abstract class ContractsEnverEksCluster extends ContractsEnverCdk impleme
 
 export abstract class ContractsEnverEksClusterArgoCd extends ContractsEnverEksCluster {
 
-    readonly preCdkCmds = ['npm --prefix lib/update-argocd-appOfApps install']
 
     readonly argocdRepoSa = new ContractsCrossRefProducer<ContractsEnverEksClusterArgoCd>(this, 'argocd-repo-sa')
     readonly argocdRepoName = new ContractsCrossRefProducer(this, 'argocdRepoName')
 
+    constructor(owner: ContractsBuild<ContractsEnverCdk>, targetAWSAccountID: string, targetAWSRegion: string, targetRevision: SRC_Rev_REF) {
+        super(owner, targetAWSAccountID, targetAWSRegion, targetRevision);
+        this.preCdkCmds.push('npm --prefix lib/update-argocd-appOfApps install')
+    }
 }
 
 
 export interface KubeCtlThruCentral extends IContractsEnver {
 
     readonly userEnver: IContractsEnver
-    readonly targetNamespace:string
+    readonly targetNamespace: string
     readonly targetEksCluster: ContractsEnverEksCluster
 
 }

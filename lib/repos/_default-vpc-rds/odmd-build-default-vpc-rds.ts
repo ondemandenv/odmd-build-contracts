@@ -4,7 +4,7 @@ import {AnyContractsEnVer, IContractsEnver} from "../../odmd-model/contracts-env
 import {Construct} from "constructs";
 import {IPAM_AB} from "../__networking/odmd-config-networking";
 import {ContractsEnverCdkDefaultVpc} from "./odmd-enver-default-vpc-rds";
-import {OndemandContracts} from "../../OndemandContracts";
+import {Accounts, OndemandContracts} from "../../OndemandContracts";
 
 
 export type SimpleVpc = {
@@ -32,7 +32,9 @@ export class OdmdBuildDefaultVpcRds extends ContractsBuild<ContractsEnverCdk> {
             return rt
         }
 
-        rt = new ContractsEnverCdkDefaultVpc(this, client.targetAWSRegion, client.targetAWSAccountID, vpc);
+        const accKey = Object.entries(OndemandContracts.inst.accounts).find(([k, v]) => v == client.targetAWSAccountID)![0] as keyof Accounts
+
+        rt = new ContractsEnverCdkDefaultVpc(this, client.targetAWSRegion, accKey, vpc);
         this.envers.push(rt)
         return rt;
     }
