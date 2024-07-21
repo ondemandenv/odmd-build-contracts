@@ -61,8 +61,8 @@ export abstract class IPAM_AB extends ContractsEnverCdk {
 
     getRevStackNames() {
         const rt = [
-            `${this.owner.buildId}--${this.targetRevision.type == 'b' ? this.targetRevision.value : this.targetRevision.toString()}`,
-            `${this.owner.buildId}-share-nat--${this.targetRevision.type == 'b' ? this.targetRevision.value : this.targetRevision.toString()}`
+            `${this.owner.buildId}--${this.targetRevision.type == 'b' ? this.targetRevision.value : this.targetRevision.toPathPartStr()}`,
+            `${this.owner.buildId}-share-nat--${this.targetRevision.type == 'b' ? this.targetRevision.value : this.targetRevision.toPathPartStr()}`
         ];
 
         return rt.map(n => IPAM_AB.SANITIZE_STACK_NAME(n))

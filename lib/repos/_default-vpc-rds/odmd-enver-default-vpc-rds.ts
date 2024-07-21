@@ -13,21 +13,21 @@ import {IPAM_AB} from "../__networking/odmd-config-networking";
 export class ContractsEnverCdkDefaultVpc extends ContractsEnverCdk implements WithVpc {
 
     readonly vpcConfig: ContractsVpc
+    readonly vpcIpv4Cidr: ContractsCrossRefProducer<ContractsEnverCdkDefaultVpc>
     readonly rdsConfigs = [] as ContractsRdsCluster[]
     readonly nameServers: ContractsCrossRefProducer<ContractsEnverCdkDefaultVpc>
     readonly centralVpcCidr: ContractsCrossRefConsumer<this, IPAM_AB>;
     readonly rdsTrustCentralRoleName: string
+    readonly clientEnvers: Set<AnyContractsEnVer> = new Set()
 
     constructor(owner: OdmdBuildDefaultVpcRds, clientAWSRegion: string, accountKey: keyof Accounts,
                 vpc: SimpleVpc, defaultRev: SRC_Rev_REF = new SRC_Rev_REF("b", `${clientAWSRegion}_${accountKey}_${vpc.vpcName}`
             .replace(/[^a-zA-Z0-9_]/g, '_'))) {
         super(owner, OndemandContracts.inst.accounts[accountKey]!, clientAWSRegion, defaultRev);
 
-        this.centralVpcCidr = new ContractsCrossRefConsumer( this, 'centralVpcCidr', vpc.ipamEnver.centralVpcCidr)
+        this.centralVpcCidr = new ContractsCrossRefConsumer(this, 'centralVpcCidr', vpc.ipamEnver.centralVpcCidr)
 
-        const adr = new ContractsIpAddresses(this, new ContractsCrossRefConsumer(
-            this, 'addr', vpc.ipamEnver.ipamPoolName
-        ), vpc.ipv4NetmaskLength, vpc.defaultSubnetIpv4NetmaskLength)
+        const adr = new ContractsIpAddresses(this, vpc.ipamEnver.ipamPoolName, vpc.ipv4NetmaskLength, vpc.defaultSubnetIpv4NetmaskLength)
 
         const tgw = new ContractsCrossRefConsumer(
             this, 'tgw', vpc.ipamEnver.transitGatewayShareName
@@ -38,10 +38,21 @@ export class ContractsEnverCdkDefaultVpc extends ContractsEnverCdk implements Wi
             transitGatewayRef = tgw
         })(adr, 'vpc');
 
-        this.nameServers = new ContractsCrossRefProducer(this, 'ns' + vpc.vpcName)
-        vpc.ipamEnver.addSubdomainServer(vpc.vpcName + '_' + this.targetAWSAccountID, this.nameServers)
+        this.vpcIpv4Cidr = new ContractsCrossRefProducer(this, 'vpcIpv4Cidr_' + vpc.vpcName)
+        this.nameServers = new ContractsCrossRefProducer(this, 'nameServers_' + vpc.vpcName)
+
+        vpc.ipamEnver.addSubdomainServer(vpc.vpcName + '_' + OndemandContracts.inst.getAccountName(this.targetAWSAccountID), this.nameServers)
         this.rdsTrustCentralRoleName = `rds_${this.targetAWSAccountID}_trustCentral_${this.targetAWSRegion}`
     }
+
+    addClient(c: AnyContractsEnVer) {
+        if (this.clientEnvers.has(c)) {
+            console.warn("Adding client again?")
+            return
+        }
+        this.clientEnvers.add(c)
+    }
+
 
     ephemeral: boolean = false
 
@@ -86,7 +97,7 @@ export class ContractsEnverCdkDefaultVpc extends ContractsEnverCdk implements Wi
     }
 
     getRevStackNames(): Array<string> {
-        const revStr = this.targetRevision.type == 'b' ? this.targetRevision.value : this.targetRevision.toString();
+        const revStr = this.targetRevision.type == 'b' ? this.targetRevision.value : this.targetRevision.toPathPartStr();
 
         const stackName = `${this.owner.buildId}--${revStr}`;
         const rt = [stackName];

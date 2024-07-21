@@ -1,19 +1,16 @@
 /**
- * Provided interface to be used by central service, copied from ODMD_REPO to app repo
- * Single implementation with only one single export under config/apps folder for loading dynamically
- * then copy to ODMD_REPO for fall back
- *
- * todo: validation in ODMD app lib
- * todo: compare with app repo definition regularly
- *
- * do not change unless you are sure!
+ * a "build" here is a process to a repo without outputs
+ * the process can have multiple versions
+ * output can be:
+ * 1) artifacts like npm package and container
+ * 2) deployments without referencable resources like endpoints, arns
  */
 
 import {PolicyStatement} from "aws-cdk-lib/aws-iam";
 import {Construct, Node} from "constructs";
 import {AnyContractsEnVer, ContractsEnver} from "./contracts-enver";
 import {ContractsEnverCdk} from "./contracts-enver-cdk";
-import {ContractsEnverContainerimg} from "./contracts-enver-containerImg";
+import {ContractsEnverCtnImg} from "./contracts-enver-ctn-img";
 import {ContractsEnverNpm} from "./contracts-enver-npm";
 import {OndemandContracts} from "../OndemandContracts";
 
@@ -22,7 +19,7 @@ type CentralConfigConstr = new (...args: any[]) => ContractsBuild<AnyContractsEn
 
 export type GithubRepo = {
     owner: string
-    repo: string
+    name: string
     ghAppInstallID: number
 }
 
@@ -53,11 +50,11 @@ export abstract class ContractsBuild<T extends ContractsEnver<ContractsBuild<T>>
     public refreshDynamicEnvers(rrefs: SRC_Rev_REF[]) {
         this._dynamicEnvers = rrefs.map(rrf => {
             if (!rrf.origin) {
-                throw new Error(`buildId ${this.buildId}, see ref:${rrf.toString()} has no origin!`)
+                throw new Error(`buildId ${this.buildId}, see ref:${rrf.toPathPartStr()} has no origin!`)
             }
-            const orgEnver = this.envers.find(e => e.targetRevision.toString() == rrf.origin)
+            const orgEnver = this.envers.find(e => e.targetRevision.toPathPartStr() == rrf.origin?.toPathPartStr())
             if (!orgEnver) {
-                throw new Error(`buildId ${this.buildId}, see ref:${rrf.toString()} can't find origin! with$${rrf.origin}`)
+                throw new Error(`buildId ${this.buildId}, see ref:${rrf.toPathPartStr()} can't find origin! with$${rrf.origin}`)
             }
             return orgEnver.generateDynamicEnver(rrf) as T
         })
@@ -65,6 +62,7 @@ export abstract class ContractsBuild<T extends ContractsEnver<ContractsBuild<T>>
 
     public readonly buildId: string
 
+    readonly description?: string
     abstract readonly gitHubRepo: GithubRepo
 
     /**
@@ -136,18 +134,31 @@ export abstract class ContractsBuild<T extends ContractsEnver<ContractsBuild<T>>
     }
 
     static SUPPORTED_ENVER_CLASSES = [
-        ContractsEnverCdk, ContractsEnverContainerimg, ContractsEnverNpm
+        ContractsEnverCdk, ContractsEnverCtnImg, ContractsEnverNpm
     ]
 }
 
 
 export class SRC_Rev_REF {
-    constructor(type: "b" | "t" | "r", value: string, origin: string | undefined = undefined) {
+    constructor(type: "b" | "t", value: string, origin: SRC_Rev_REF | undefined = undefined) {
         this.type = type;
-        this.value = value;
-        if (value.includes(':') || value.includes('@')) {
-            throw new Error('n/a')
+        if (!/^[a-zA-Z0-9_.-]+$/.test(value)) {
+            throw new Error(`SRC_Rev_REF's value should be /^[a-zA-Z0-9_.-]+$/, got ${value}`)
         }
+        if (value.includes('..')) {//reserved
+            throw new Error(`SRC_Rev_REF's value should not have .. , got ${value}`)
+        }
+        if (value.includes('_-')) {// reserved
+            throw new Error(`SRC_Rev_REF's value should not have _- , got ${value}`)
+        }
+        if (value.includes('-_')) {// is reserved
+            throw new Error(`SRC_Rev_REF's value should not have -_ , got ${value}`)
+        }
+        if (type == 'b' && value.toLowerCase().startsWith('v')) {
+            throw new Error(`branch name can't start with v which is reserved for tagging`)
+        }
+
+        this.value = value;
 
         OndemandContracts.inst.allAccounts.forEach(ac => {
             if (value.includes(ac)) {
@@ -156,20 +167,26 @@ export class SRC_Rev_REF {
         })
 
         if (origin) {
-            if (origin.includes('@')) {
+            if (origin.origin) {
                 throw new Error(`Illegal origin: ${origin}, origin can't have origin`)
             }
         }
         this.origin = origin
     }
 
-    // readonly type: "branch" | "tag" | "revision"
-    readonly type: "b" | "t" | "r"
+    // readonly type: "branch" | "tag"
+    readonly type: "b" | "t"
     readonly value: string
-    readonly origin: string | undefined
+    /**
+     * b:branch_name
+     * t:tag_name
+     */
+    readonly origin: SRC_Rev_REF | undefined
 
     toString() {
-        return this.type + ':' + this.value + (this.origin ? `@${this.origin}` : '');
+        throw new Error('n/a')
+        // return this.toPathPartStr()
+        // return this.type + ':' + this.value + (this.origin ? `@${this.origin}` : '');
     }
 
     /**
@@ -189,6 +206,7 @@ export class SRC_Rev_REF {
      * Parameter hierarchies are limited to a maximum depth of fifteen levels.
      */
     toPathPartStr() {
-        return this.type == 'b' ? this.value : this.type + '.' + this.value;
+        const orgStr = (this.origin ? (this.origin.toPathPartStr() + '-_') : '') as string
+        return orgStr + this.type + '..' + this.value;
     }
 }

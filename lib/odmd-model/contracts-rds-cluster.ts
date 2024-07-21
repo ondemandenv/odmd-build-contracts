@@ -28,7 +28,7 @@ export class ContractsRdsCluster {
     public addAllowProducer(producer: ContractsCrossRefProducer<AnyContractsEnVer>) {
         this.allowingCIDRS.push(new ContractsCrossRefConsumer(this.vpc.ipAddresses.enver, producer.name, producer, {
             defaultIfAbsent: '0.0.0.0/32',
-            triggerOnChange: true
+            trigger: "directly"
         }))
     }
 

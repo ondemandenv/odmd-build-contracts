@@ -1,29 +1,28 @@
 import {ContractsBuild, SRC_Rev_REF} from "../../../odmd-model/contracts-build";
-import {ContractsEnverContainerimg} from "../../../odmd-model/contracts-enver-containerImg";
+import {ContractsEnverCtnImg, CtnImgRefProducer} from "../../../odmd-model/contracts-enver-ctn-img";
 import {RepositoryProps} from "aws-cdk-lib/aws-ecr";
 import {OndemandContracts} from "../../../OndemandContracts";
 import {ContractsVpc} from "../../../odmd-model/contracts-vpc";
 import {ContractsCrossRefConsumer, ContractsCrossRefProducer} from "../../../odmd-model/contracts-cross-refs";
 import {PgSchemaUsersProps, PgUsr} from "../../../odmd-model/contracts-pg-schema-usrs";
-import {ContractsRdsCluster, WithRds} from "../../../odmd-model/contracts-rds-cluster";
+import {ContractsRdsCluster} from "../../../odmd-model/contracts-rds-cluster";
 
-export class OdmdEnverSampleSpringImg extends ContractsEnverContainerimg implements WithRds{
+export class OdmdEnverSampleSpringImg extends ContractsEnverCtnImg {
 
-    readonly imageNameToExtraTags: Map<string, string[]>;
     readonly builtImgNameToRepo: {
         [imgName: string]: RepositoryProps//props can be just empty
     }
     readonly builtImgNameToRepoProducer: {
-        [imgName: string]: ContractsCrossRefProducer<ContractsEnverContainerimg>
+        [imgName: string]: CtnImgRefProducer
     }
 
-    readonly appName = `cdkSpringRds-app`
+    readonly appName = `cdk-spring-rds-app`
     readonly appImgName = `${this.appName}:0.0.1-SNAPSHOT`
 
-    readonly migName = `cdkSpringRds-db-migration`
+    readonly migName = `cdk-spring-rds-db-migration`
     readonly migImgName = `${this.migName}:0.0.1-SNAPSHOT`
-    readonly appImgRefProducer: ContractsCrossRefProducer<ContractsEnverContainerimg>;
-    readonly migImgRefProducer: ContractsCrossRefProducer<ContractsEnverContainerimg>;
+    readonly appImgRefProducer: CtnImgRefProducer;
+    readonly migImgRefProducer: CtnImgRefProducer;
 
 
     buildCmds: string[] = ['chmod +x gradlew && ./gradlew clean build bootBuildImage -x generateGitProperties -x test --info --stacktrace'];
@@ -35,23 +34,20 @@ export class OdmdEnverSampleSpringImg extends ContractsEnverContainerimg impleme
     public readonly pgSchemaUsersProps: PgSchemaUsersProps
 
 
-    constructor(owner: ContractsBuild<ContractsEnverContainerimg>) {
+    constructor(owner: ContractsBuild<ContractsEnverCtnImg>) {
         super(owner, OndemandContracts.inst.accounts.workplace1, "us-west-1", new SRC_Rev_REF("b", "odmdSbxUsw1"));
 
-        this.imageNameToExtraTags = new Map<string, string[]>([
-            [this.appImgName, []],
-            [this.migImgName, []],
-        ]);
 
-
-        const appRepoName = this.appName + this.targetRevision;
-        const migRepoName = this.migImgName + this.targetRevision;
+        const appRepoName = this.appName + this.targetRevision.toPathPartStr();
+        const migRepoName = this.migImgName + this.targetRevision.toPathPartStr();
         this.builtImgNameToRepo = {
-            [this.appImgName]: {repositoryName: appRepoName.toLowerCase().replace(/[^a-z0-9-_/]/g, '')},
-            [this.migImgName]: {repositoryName: migRepoName.toLowerCase().replace(/[^a-z0-9-_/]/g, '')}
+            [this.appImgName]: {repositoryName: this.genRepoName(appRepoName)},
+            [this.migImgName]: {repositoryName: this.genRepoName(migRepoName)},
         }
-        this.appImgRefProducer = new ContractsCrossRefProducer<ContractsEnverContainerimg>(this, 'payments-app-ref-producer', 'payments-app');
-        this.migImgRefProducer = new ContractsCrossRefProducer<ContractsEnverContainerimg>(this, 'payments-db-migration-producer', 'payments-db-migration');
+
+        this.appImgRefProducer = new CtnImgRefProducer(this, 'payments-app-ecr-sha-producer', {repoPathPart: 'app-ecr'});
+        this.migImgRefProducer = new CtnImgRefProducer(this, 'payments-db-mig-ecr-producer', {repoPathPart: 'mig-ecr'});
+
         this.builtImgNameToRepoProducer = {
             [this.appImgName]: this.appImgRefProducer,
             [this.migImgName]: this.migImgRefProducer,
@@ -73,7 +69,7 @@ export class OdmdEnverSampleSpringImg extends ContractsEnverContainerimg impleme
         vpcRds.addSchemaUsers(this.rdsConfig, this.pgSchemaUsersProps)
 
         const defaultEcrEks = OndemandContracts.inst.defaultEcrEks.getOrCreateOne(this, OndemandContracts.inst.eksCluster.argoClusterEnver,
-            this.owner.buildId + '/' + this.targetRevision.toString()
+            this.owner.buildId + '/' + this.targetRevision.toPathPartStr()
         );
 
         const migrateImg = new ContractsCrossRefConsumer(defaultEcrEks, 'migImage', this.migImgRefProducer);
@@ -99,7 +95,7 @@ export class OdmdEnverSampleSpringImg extends ContractsEnverContainerimg impleme
             }]
         }
 
-        this.rdsConfig.addAllowProducer(defaultEcrEks.targetEksCluster.clusterIpv4Cidr)
+        this.rdsConfig.addAllowProducer(defaultEcrEks.targetEksCluster.vpcCidr)
 
     }
 

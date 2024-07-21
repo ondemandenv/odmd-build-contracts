@@ -57,12 +57,14 @@ export abstract class ContractsEnver<T extends ContractsBuild<ContractsEnver<T>>
 
 
     constructor(owner: T, targetAWSAccountID: string, targetAWSRegion: string, targetRevision: SRC_Rev_REF) {
-        super(owner, targetRevision.toString());
+        super(owner, targetRevision.toPathPartStr());
         this.owner = owner;
         this.targetAWSAccountID = targetAWSAccountID;
         this.targetAWSRegion = targetAWSRegion;
         this.targetRevision = targetRevision;
     }
+
+    readonly description?: string
 
     /**
      * this branch/environment will be deployed to specific account and region,
@@ -97,18 +99,17 @@ export abstract class ContractsEnver<T extends ContractsBuild<ContractsEnver<T>>
      *
      * @param originalName original resource name
      */
-        //todo: add regex check for different kinds
-        // public genDynamicName(originalName: string) {
-        //     if (process.env.SRC_BRANCH == this.baseBranch) {
-        //         return originalName
-        //     }
-        //     return originalName + '_' + process.env.SRC_BRANCH
-        // } use OdmdNames.create with enver
-
+    //todo: add regex check for different kinds
+    // public genDynamicName(originalName: string) {
+    //     if (process.env.SRC_BRANCH == this.baseBranch) {
+    //         return originalName
+    //     }
+    //     return originalName + '_' + process.env.SRC_BRANCH
+    // } use OdmdNames.create with enver
 
 
     public get centralRepoSrcRoleName(): string {
-        return `${this.owner.buildId}-${this.targetAWSRegion}${this.targetAWSAccountID}-repo-build-cc`
+        return `${this.owner.buildId}-${this.targetAWSRegion}${this.targetAWSAccountID}-centerRole`
     }
 
     public get centralRepoSrcRolePath(): string {
@@ -120,7 +121,7 @@ export abstract class ContractsEnver<T extends ContractsBuild<ContractsEnver<T>>
     }
 
     public get buildRoleName(): string {
-        return `${this.owner.buildId}-${this.targetAWSRegion}${this.targetAWSAccountID}-odmd-build-role`;
+        return `${this.owner.buildId}-${this.targetAWSRegion}${this.targetAWSAccountID}-buildRole`;
     }
 
     public get buildRolePath(): string {

@@ -5,7 +5,7 @@ import {ContractsVpc} from "../../../odmd-model/contracts-vpc";
 import {ContractsEnverCdk} from "../../../odmd-model/contracts-enver-cdk";
 import {SRC_Rev_REF} from "../../../odmd-model/contracts-build";
 import {ContractsCrossRefConsumer} from "../../../odmd-model/contracts-cross-refs";
-import {ContractsEnverContainerimg} from "../../../odmd-model/contracts-enver-containerImg";
+import {ContractsEnverCtnImg} from "../../../odmd-model/contracts-enver-ctn-img";
 
 /**
  * so that the cdk code to use EksManifest which takes KubeCtlThruVpc as param
@@ -16,8 +16,8 @@ export class OdmdEnverSampleSpringCdkKubeEks extends ContractsEnverCdk implement
     vpcConfig: ContractsVpc
     rdsConfig: ContractsRdsCluster
 
-    readonly appImg: ContractsCrossRefConsumer<OdmdEnverSampleSpringCdkKubeEks, ContractsEnverContainerimg>
-    readonly migrateImg: ContractsCrossRefConsumer<OdmdEnverSampleSpringCdkKubeEks, ContractsEnverContainerimg>
+    readonly appImg: ContractsCrossRefConsumer<OdmdEnverSampleSpringCdkKubeEks, ContractsEnverCtnImg>
+    readonly migrateImg: ContractsCrossRefConsumer<OdmdEnverSampleSpringCdkKubeEks, ContractsEnverCtnImg>
 
     constructor(param: OdmdBuildSampleSpringCdk) {
         super(param, OndemandContracts.inst.accounts.workplace1, "us-west-1", new SRC_Rev_REF("b", "p0dmdSbxUsw1"))

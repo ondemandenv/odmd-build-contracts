@@ -1,5 +1,6 @@
 import {ContractsBuild, SRC_Rev_REF} from "./contracts-build";
-import {ContractsEnver, IContractsEnver} from "./contracts-enver";
+import {AnyContractsEnVer, ContractsEnver, IContractsEnver} from "./contracts-enver";
+import {ContractsCrossRefConsumer} from "./contracts-cross-refs";
 
 export class ContractsEnverCdk extends ContractsEnver<ContractsBuild<ContractsEnverCdk>> {
 
@@ -8,16 +9,20 @@ export class ContractsEnverCdk extends ContractsEnver<ContractsBuild<ContractsEn
      * this is only for deploying updates
      */
     readonly noRollback?: boolean
-    readonly changeSetNoDeploy?: boolean
 
-    //todo
-    readonly approvalRole?: string//will be used when len > 3
+    //todo: diff any way
+    // readonly changeSetNoDeploy?: boolean
 
-    readonly preCdkCmds: Array<string> = [
+    //todo: when team IAM is ready
+    readonly approvalRole?: ContractsCrossRefConsumer<this, AnyContractsEnVer>[]
+
+    readonly preInstallCmds: Array<string> = [
         //todo: get the org dynamically
         'echo "@ondemandenv:registry=https://npm.pkg.github.com/" >> .npmrc',
         'echo "//npm.pkg.github.com/:_authToken=$github_token" >> .npmrc'
     ]
+
+    readonly preCdkCmds: Array<string> = []
 
     readonly contextStrs?: Array<string>
 
@@ -46,7 +51,7 @@ export class ContractsEnverCdk extends ContractsEnver<ContractsBuild<ContractsEn
      * Make sure it's consistent
      */
     getRevStackNames(): Array<string> {
-        const revStr = this.targetRevision.type == 'b' ? this.targetRevision.value : this.targetRevision.toString();
+        const revStr = this.targetRevision.type == 'b' ? this.targetRevision.value : this.targetRevision.toPathPartStr();
         const rt = [`${this.owner.buildId}--${revStr}`];
         return rt.map(n => ContractsEnverCdk.SANITIZE_STACK_NAME(n))
     }

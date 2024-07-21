@@ -40,16 +40,9 @@ export class EksClusterEnverArgo extends ContractsEnverEksClusterArgoCd implemen
     constructor(owner: ContractsBuild<ContractsEnverCdk>, id: string) {
         super(owner, OndemandContracts.inst.accounts.workplace2, 'us-west-1', new SRC_Rev_REF("b", 'odmdSbxUsw1Gyang'));
         const ipamWest1Le = OndemandContracts.inst.networking.ipam_west1_le;
-        const adr = new ContractsIpAddresses(this, new ContractsCrossRefConsumer(
-            this, this.targetRevision.toString(), ipamWest1Le.ipamPoolName
-        ))
-        const tgw = new ContractsCrossRefConsumer(
-            this, 'tgw', ipamWest1Le.transitGatewayShareName
-        )
+        const adr = new ContractsIpAddresses(this, ipamWest1Le.ipamPoolName)
 
-        this.vpcConfig = new (class extends ContractsVpc {
-            transitGatewayRef = tgw;
-        })(adr, 'the-vpc');
+        this.vpcConfig = new ContractsVpc(adr, 'the-vpc');
         this.clusterName = 'gyang-tst-eks-clusteragap1'
 
         this.centralVpcCidr = new ContractsCrossRefConsumer(this, 'centralVpcCidr', ipamWest1Le.centralVpcCidr)

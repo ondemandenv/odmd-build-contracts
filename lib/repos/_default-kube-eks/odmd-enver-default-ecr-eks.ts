@@ -3,7 +3,7 @@ import {OdmdBuildDefaultKubeEks} from "./odmd-build-default-kube-eks";
 import {SRC_Rev_REF} from "../../odmd-model/contracts-build";
 import {AnyContractsEnVer, IContractsEnver} from "../../odmd-model/contracts-enver";
 import {ContractsEnverEksCluster, KubeCtlThruCentral} from "../../odmd-model/contracts-enver-eks-cluster";
-import {DeploymentProps, IngressProps, JobProps, ServiceProps} from "cdk8s-plus-28";
+import {DeploymentProps, IngressProps, JobProps, ServiceProps} from "cdk8s-plus-29";
 
 export class ContractsEnverCdkDefaultEcrEks extends ContractsEnverCdk implements KubeCtlThruCentral {
 

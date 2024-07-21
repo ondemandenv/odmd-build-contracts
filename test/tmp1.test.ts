@@ -1,5 +1,5 @@
 import {OndemandContracts} from "../lib/OndemandContracts";
-import {ContractsEnverContainerimg} from "../lib/odmd-model/contracts-enver-containerImg";
+import {ContractsEnverCtnImg} from "../lib/odmd-model/contracts-enver-ctn-img";
 import {ContractsCrossRefProducer, OdmdNames} from "../lib/odmd-model/contracts-cross-refs";
 import {App, Stack} from "aws-cdk-lib";
 import {PgSchemaUsers} from "../lib/odmd-model/contracts-pg-schema-usrs";
@@ -39,12 +39,9 @@ test('make_sense1', () => {
 
     OndemandContracts.inst.odmdBuilds.forEach(cc => {
         cc.envers.forEach(enver => {
-            if (enver instanceof ContractsEnverContainerimg) {
-                if (!enver.imageNameToExtraTags) {
-                    throw new Error(`builtImgNameToTags has to be defined, but found BUILD:${enver.owner.buildId}, Branch: ${enver.targetRevision} is NOT `)
-                }
+            if (enver instanceof ContractsEnverCtnImg) {
 
-                let cimgEnvr = enver as ContractsEnverContainerimg;
+                let cimgEnvr = enver as ContractsEnverCtnImg;
                 const imgToRepo: {
                     [p: string]: RepositoryProps
                 } = cimgEnvr.builtImgNameToRepo

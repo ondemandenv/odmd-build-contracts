@@ -2,7 +2,7 @@ import {AnyContractsEnVer} from "../lib/odmd-model/contracts-enver";
 import {OndemandContracts} from "../lib/OndemandContracts";
 import {ContractsBuild} from "../lib/odmd-model/contracts-build";
 import {RegionInfo} from "aws-cdk-lib/region-info";
-import {ContractsEnverContainerimg} from "../lib/odmd-model/contracts-enver-containerImg";
+import {ContractsEnverCtnImg} from "../lib/odmd-model/contracts-enver-ctn-img";
 import {ContractsEnverCdk} from "../lib/odmd-model/contracts-enver-cdk";
 import {ContractsIpAddresses, WithVpc} from "../lib/odmd-model/contracts-vpc";
 import {ContractsEnverNpm} from "../lib/odmd-model/contracts-enver-npm";
@@ -130,10 +130,10 @@ test('make_sense', () => {
         }
         buildConfig.envers.forEach((e: AnyContractsEnVer) => {
             if (e.targetRevision.value.length > 25) {
-                console.warn(`buildId ${buildId}'s infraGitRootBranch name:"${e.targetRevision}" length: ${e.targetRevision.value.length} might be too long to use dynamic env`)
+                console.warn(`buildId ${buildId}'s infraGitRootBranch name:"${e.targetRevision.toPathPartStr()}" length: ${e.targetRevision.value.length} might be too long to use dynamic env`)
             }
             if (e.targetRevision.value.length > 40) {
-                throw new Error(`buildid: ${buildId}'s infraGitRootBranch name:"${e.targetRevision}" length: ${e.targetRevision.value.length} exceed limit of 25`)
+                throw new Error(`buildid: ${buildId}'s infraGitRootBranch name:"${e.targetRevision.toPathPartStr()}" length: ${e.targetRevision.value.length} exceed limit of 25`)
             }
 
             //branch name can be part of a secret name, so it has to be alphanumeric
@@ -147,10 +147,10 @@ test('make_sense', () => {
         })
 
         buildConfig.envers.reduce((p, c) => {
-            if (!p.has(c.targetRevision.toString())) {
-                p.set(c.targetRevision.toString(), new Set())
+            if (!p.has(c.targetRevision.toPathPartStr())) {
+                p.set(c.targetRevision.toPathPartStr(), new Set())
             }
-            let envConfigs = p.get(c.targetRevision.toString())!;
+            let envConfigs = p.get(c.targetRevision.toPathPartStr())!;
             envConfigs.add(c)
             if (envConfigs.size > 1 && !OndemandContracts.inst.DEFAULTS_SVC.includes(c.owner)) {
                 throw new Error(`For each build, One branch can only have one deployment, but found ${c.owner.buildId}, branch ${c.targetRevision} are pointing to mutiple deployments!`)
@@ -168,27 +168,6 @@ test('make_sense', () => {
         }
 
         buildConfig.envers.forEach(enver => {
-            if (enver instanceof ContractsEnverContainerimg) {
-                const imgConfig = enver as ContractsEnverContainerimg;
-                imgConfig.imageNameToExtraTags.forEach((tags, imgName) => {
-                    if (imgName.includes('/')) {
-                        throw new Error(`only img name and tag please: builtImgNameTag: ${imgName} `)
-                    }
-                    if (!imgName.includes(':')) {
-                        throw new Error(`builtin image needs a default tag please: builtImgNameTag: ${imgName} `)
-                    }
-                    const tmp = imgConfig.builtImgNameToRepo
-                    if (!tmp.hasOwnProperty(imgName)) {
-                        throw new Error(`imgName: ${imgName} in builtImgNameToTags but not found in getBranchImgToRepo ...`)
-                    }
-
-                    tags.forEach(it => {
-                        if (it.includes('/')) {
-                            throw new Error(`only img name and tag please builtImgNameTag: ${imgName}, this.infraGitRootBranch: ${enver.targetRevision}, it:${it}`)
-                        }
-                    })
-                })
-            }
             if (enver instanceof ContractsEnverCdk) {
                 const cdkConfig = enver as ContractsEnverCdk
                 cdkConfig.getRevStackNames().forEach(stackName => {
@@ -245,14 +224,14 @@ test('make_sense', () => {
             checkVpcEnver(enver as any as WithVpc)
         }
         if (enver.owner.gitHubRepo) {
-            if (enver instanceof ContractsEnverNpm || enver instanceof ContractsEnverContainerimg) {
+            if (enver instanceof ContractsEnverNpm || enver instanceof ContractsEnverCtnImg) {
                 enver.buildCmds?.forEach(c => {
                     if (c.includes(`\${{`)) {
                         throw new Error(`${c} includes \${{}} which won't work, try put it in env and use $`)
                     }
                 })
             } else if (enver instanceof ContractsEnverCdk) {
-                enver.preCdkCmds?.forEach(c => {
+                enver.preInstallCmds?.forEach(c => {
                     if (c.includes(`\${{`)) {
                         throw new Error(`${c} includes \${{}} which won't work, try put it in env and use $`)
                     }
@@ -263,13 +242,13 @@ test('make_sense', () => {
 
     const detectDivVpcWithSameName = (p: Map<string, WithVpc>, currentEnver: WithVpc) => {
         const vpcName = currentEnver.vpcConfig!.vpcName;
-        let currStr = `build: ${currentEnver.owner.buildId}/branch:${currentEnver.targetRevision}`;
+        let currStr = `build: ${currentEnver.owner.buildId}/branch:${currentEnver.targetRevision.toPathPartStr()}`;
         if (vpcName == undefined) {
             throw new Error(`${currStr} has vpc with undefined vpcName`)
         }
         const existingEnver = p.get(vpcName!);
         if (existingEnver) {
-            const exisStr = `build: ${existingEnver.owner.buildId}/branch:${existingEnver.targetRevision}`;
+            const exisStr = `build: ${existingEnver.owner.buildId}/branch:${existingEnver.targetRevision.toPathPartStr()}`;
             if (existingEnver?.vpcConfig != currentEnver.vpcConfig) {
                 throw new Error(`${currStr} and ${exisStr} has different vpcConfig
                          with same vpc name: ${vpcName}`)
@@ -322,7 +301,7 @@ test('make_sense', () => {
         console.log(`\n>>>>`)
         const msg = `\t${OdmdNames.md5hash(a)}\t=>\t${a}\t=>\n\n${Array.from(vs).map(
             v => {
-                let rt = '\t{ ' + v.owner.buildId + '/' + v.targetRevision
+                let rt = '\t{ ' + v.owner.buildId + '/' + v.targetRevision.toPathPartStr()
                 if (v instanceof ContractsEnverCdk) {
                     rt = rt + '/[' + (v as ContractsEnverCdk).getRevStackNames().join() + ']'
                 }

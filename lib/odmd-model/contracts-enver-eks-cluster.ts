@@ -11,12 +11,11 @@ export abstract class ContractsEnverEksCluster extends ContractsEnverCdk impleme
 
 
     readonly vpcConfig: ContractsVpc
+    readonly vpcCidr: ContractsCrossRefProducer<ContractsEnverEksCluster> = new ContractsCrossRefProducer<ContractsEnverEksCluster>(this, 'vpcCidr')
 
     readonly oidcProviderArn: ContractsCrossRefProducer<ContractsEnverEksCluster> = new ContractsCrossRefProducer<ContractsEnverEksCluster>(this, 'oidcProviderArn')
     readonly clusterEndpoint: ContractsCrossRefProducer<ContractsEnverEksCluster> = new ContractsCrossRefProducer<ContractsEnverEksCluster>(this, 'clusterEndpoint')
 
-
-    readonly clusterIpv4Cidr: ContractsCrossRefProducer<ContractsEnverEksCluster> = new ContractsCrossRefProducer<ContractsEnverEksCluster>(this, 'clusterIpv4Cidr')
     readonly kubectlRoleArn: ContractsCrossRefProducer<ContractsEnverEksCluster> = new ContractsCrossRefProducer<ContractsEnverEksCluster>(this, 'kubectlRoleArn')
 
 

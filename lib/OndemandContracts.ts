@@ -11,6 +11,8 @@ import {App, Aspects} from "aws-cdk-lib";
 import {ContractsAspect} from "./odmd-model/contracts-aspect";
 import {OdmdConfigOdmdContractsCdk} from "./repos/__contracts/odmd-build-odmd-contracts-cdk";
 import {OdmdConfigOdmdContractsNpm} from "./repos/__contracts/odmd-build-odmd-contracts-npm";
+import {SampleSpringOpenApi3Cdk} from "./repos/sample-spring-openapi3/sample-spring-open-api3-cdk";
+import {SampleSpringOpenApi3Img} from "./repos/sample-spring-openapi3/sample-spring-open-api3-img";
 
 
 type GithubRepos = {
@@ -20,6 +22,7 @@ type GithubRepos = {
     _defaultKubeEks: GithubRepo
     _defaultVpcRds: GithubRepo
     sample: GithubRepo
+    sample1: GithubRepo
 }
 
 export type Accounts = {
@@ -53,9 +56,17 @@ export class OndemandContracts extends Construct {
 
     public readonly springRdsCdk
     public readonly springRdsImg
+    public readonly springOpen3Img
+    public readonly springOpen3Cdk
     // public readonly springRdsEksArgoConfig
 
+
     public readonly accounts: Accounts
+
+    public getAccountName(accId: string) {
+        return Object.entries(this.accounts).find(([k, v]) => v == accId)![0] as keyof Accounts
+    }
+
     public readonly allAccounts: string[]
 
     public readonly githubRepos: GithubRepos
@@ -92,13 +103,38 @@ export class OndemandContracts extends Construct {
         }
 
         if (!accountOverriding && process.env.ODMD_ACCOUNTS) {
-            accountOverriding = JSON.parse(Buffer.from(process.env.ODMD_ACCOUNTS!, 'base64').toString('utf-8')) as Accounts
+            let accountsJsonStr = Buffer.from(process.env.ODMD_ACCOUNTS!, 'base64').toString('utf-8');
+            accountOverriding = JSON.parse(accountsJsonStr) as Accounts
+            console.log(`accountsJsonStr>>>
+            
+            ${accountsJsonStr}
+            
+            accountsJsonStr<<<`)
         }
         if (accountOverriding) {
             const keys = Object.keys(this.accounts)
+            console.warn(`keys: ${JSON.stringify(keys)}`)
+            console.warn(`accountOverriding: ${JSON.stringify(accountOverriding)}`)
+
+            for (const k in accountOverriding) {
+                // @ts-ignore
+                console.log(`${k} >> ${accountOverriding[k]}`)
+            }
+
+
             Object.entries(accountOverriding).forEach(ovr => {
+
+
+                console.warn(`
+                
+                ovr[0]: ${ovr[0]}
+                ovr[1]: ${ovr[1]} 
+                
+                `)
+
+
                 if (!keys.includes(ovr[0])) {
-                    throw new Error(`wrong account overriding: ${ovr}`)
+                    throw new Error(`wrong account overriding: ${ovr[0]}:  ${ovr[1]}`)
                 }
                 this.accounts[ovr[0] as keyof Accounts] = ovr[1] as string
             })
@@ -115,19 +151,19 @@ export class OndemandContracts extends Construct {
             this.githubRepos = JSON.parse(Buffer.from(process.env.ODMD_GH_REPOS, 'base64').toString("utf-8")) as GithubRepos
         } else {
             this.githubRepos = {
-                __contracts: {owner: 'odmd', repo: 'contracts', ghAppInstallID: 1234},
-                __eks: {owner: 'odmd', repo: 'eks', ghAppInstallID: 1234},
-                __networking: {owner: 'odmd', repo: 'networking', ghAppInstallID: 1234},
-                _defaultKubeEks: {owner: 'odmd', repo: 'defaultKubeEks', ghAppInstallID: 1234},
-                _defaultVpcRds: {owner: 'odmd', repo: 'defaultVpcRds', ghAppInstallID: 1234},
-                sample: {owner: 'odmd', repo: 'sample', ghAppInstallID: 1234},
+                __contracts: {owner: 'odmd', name: 'contracts', ghAppInstallID: 1234},
+                __eks: {owner: 'odmd', name: 'eks', ghAppInstallID: 1234},
+                __networking: {owner: 'odmd', name: 'networking', ghAppInstallID: 1234},
+                _defaultKubeEks: {owner: 'odmd', name: 'defaultKubeEks', ghAppInstallID: 1234},
+                _defaultVpcRds: {owner: 'odmd', name: 'defaultVpcRds', ghAppInstallID: 1234},
+                sample: {owner: 'odmd', name: 'sample', ghAppInstallID: 1234},
+                sample1: {owner: 'odmd', name: 'sample1', ghAppInstallID: 1234},
 
             }
         }
         this.buildIdToRevRefs = buildIdToRevRefs
 
         this.allAccounts = Object.values(this.accounts)
-        this.odmdConfigOdmdContractsCdk = new OdmdConfigOdmdContractsCdk(this)
         this.odmdConfigOdmdContractsNpm = new OdmdConfigOdmdContractsNpm(this)
 
         this.networking = new OdmdConfigNetworking(this)
@@ -139,7 +175,10 @@ export class OndemandContracts extends Construct {
         this.DEFAULTS_SVC = [this.defaultVpcRds, this.defaultEcrEks] as ContractsBuild<AnyContractsEnVer>[]
 
         this.springRdsImg = new OdmdBuildSampleSpringImg(this)
+        this.odmdConfigOdmdContractsCdk = new OdmdConfigOdmdContractsCdk(this)
         this.springRdsCdk = new OdmdBuildSampleSpringCdk(this)
+        this.springOpen3Img = new SampleSpringOpenApi3Img(this)
+        this.springOpen3Cdk = new SampleSpringOpenApi3Cdk(this)
         // this.springRdsEksArgoConfig = new OdmdBuildSampleSpringEksArgo(this)
 
         this.odmdBuilds = [
@@ -151,6 +190,8 @@ export class OndemandContracts extends Construct {
             this.defaultEcrEks,
             this.springRdsImg,
             this.springRdsCdk,
+            this.springOpen3Img,
+            this.springOpen3Cdk,
             // this.springRdsEksArgoConfig,
         ]
         if (new Set(this.odmdBuilds).size != this.odmdBuilds.length) {
@@ -163,6 +204,7 @@ export class OndemandContracts extends Construct {
         if (!process.env.CDK_CLI_VERSION) {
             throw new Error("have to have process.env.CDK_CLI_VERSION!")
         }
+
 
         const buildRegion = process.env.CDK_DEFAULT_REGION;
         let buildAccount: string;

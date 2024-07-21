@@ -8,7 +8,7 @@ import {ContractsCrossRefConsumer} from "./contracts-cross-refs";
 
 export function GET_EKS_MANIFEST_ROLE_PROVIDER_NAME(ownerBuildId: string, ownerRegion: string, ownerAccount: string, eksClusterEnver: ContractsEnverEksCluster) {
     //The Name field of every Export member must be specified and consist only of alphanumeric characters, colons, or hyphens.
-    return `odmd-ctl-${ownerBuildId}-${ownerRegion}-${ownerAccount}-${eksClusterEnver.targetRevision.toString()}:eks_manifest_role-provider`.replace(/[^a-zA-Z0-9:-]/g, '-');
+    return `odmd-ctl-${ownerBuildId}-${ownerRegion}-${ownerAccount}-${eksClusterEnver.targetRevision.toPathPartStr()}:eks_manifest_role-provider`.replace(/[^a-zA-Z0-9:-]/g, '-');
 }
 
 export interface EksManifestProps {
@@ -59,7 +59,7 @@ export class EksManifest extends Construct {
 
                 manifest: ymlStr.split('\n'),
                 k8sNamespace: props.k8sNamespace ?? enver.owner.buildId + '_' + enver.targetRevision,
-                targetRevision: enver.targetRevision.toString(),
+                targetRevision: enver.targetRevision.toPathPartStr(),
 
                 skipValidate: props.skipValidate,
                 overWrite: props.overWrite,

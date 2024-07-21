@@ -1,8 +1,12 @@
 import {ContractsBuild, SRC_Rev_REF} from "./contracts-build";
 import {ContractsEnver} from "./contracts-enver";
 
+/**
+ * we don't have producer of the repo here because:
+ * all lib artifacts builds are used as library for an app/service, we only track the app/service version,
+ * EXCEPT the CONTRACTS defining odmd self and all services' contracts.
+ */
 export class ContractsEnverNpm extends ContractsEnver<ContractsBuild<ContractsEnverNpm>> {
-
 
     constructor(owner: ContractsBuild<ContractsEnverNpm>, targetAWSAccountID: string, targetAWSRegion: string, targetRevision: SRC_Rev_REF, buildCmds: string[] | undefined = undefined) {
         super(owner, targetAWSAccountID, targetAWSRegion, targetRevision);
@@ -17,31 +21,6 @@ export class ContractsEnverNpm extends ContractsEnver<ContractsBuild<ContractsEn
         'echo "@ondemandenv:registry=https://npm.pkg.github.com/" >> .npmrc',
         'echo "//npm.pkg.github.com/:_authToken=$github_token" >> .npmrc'
     ]
-
-    /**
-     * `$(jq -r '.version' package.json | cut -d'-' -f1)-${branch}$(date +'%Y%m%d_%H%M%S')`
-     * @param branch
-     * @param env
-     */
-    // abstract getNpmVersionArg(branch: string, env?: OdmdEnVerNpmConfig): string
-
-    /*
-    readonly publish: {
-        authToken: { githubToken: { npmrcOverwrite: boolean } }
-            | { secretName: string, npmrcOverwrite: boolean },
-        scope: string,
-        registry: string
-    } = {
-        scope: '@ondemandenv',
-        registry: 'npm.pkg.github.com',
-        authToken: {
-            githubToken: {npmrcOverwrite: true}
-        }
-    }
-
-    'echo "@ondemandenv:registry=https://npm.pkg.github.com/" >> .npmrc',
-    'echo "//npm.pkg.github.com/:_authToken=${{secrets.GITHUB_TOKEN}}" >> .npmrc',
-    */
 
 
 }

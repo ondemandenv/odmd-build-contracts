@@ -5,35 +5,78 @@ import {OndemandContracts} from "../OndemandContracts";
 import {ContractsShareIn} from "./contracts-share-values";
 import {Stack} from "aws-cdk-lib";
 
+export interface RefProducerProps {
+    pathPart?: string
+    parentPathPart?: string
+    children?: RefProducerProps[]
+}
+
 export class ContractsCrossRefProducer<T extends AnyContractsEnVer> extends Construct {
-    constructor(owner: T, id: string, name?: string) {
+    constructor(owner: T, id: string, props?: RefProducerProps) {
         super(owner, id)
-        this._consumers = new Map<ContractsCrossRefConsumer<AnyContractsEnVer, T>, Set<string>>()
-        this.name = name ?? id
-        if (this.name.includes('/')) {
-            throw new Error(`ref producer's name can't contain /, got ${this.name}`)
+        const name = props?.pathPart ?? id
+        if (!/^[a-zA-Z0-9_.-]+$/.test(name)) {//.. is reserved!
+            throw new Error(`ref producer's name should be /^[a-zA-Z0-9_.-]+$/, got ${name}`)
         }
+        if (name.includes('..')) {
+            throw new Error(`ref producer's value should not have .. , got ${name}`)
+        }
+
+        if (props && props.parentPathPart) {
+            this.name = props.parentPathPart + '/' + name
+        } else {
+            this.name = name
+        }
+
+        this.children = props?.children?.map((c, i) => {
+            return new ContractsCrossRefProducer(owner, id + '-' + c.pathPart ?? i, {
+                pathPart: c.pathPart,
+                parentPathPart: this.name,
+                children: c.children
+            })
+        })
     }
 
     readonly name: string
+    readonly children?: ContractsCrossRefProducer<T>[]
 
     get owner(): T {
         return this.node.scope as T
     }
 
-    get consumers(): Map<ContractsCrossRefConsumer<AnyContractsEnVer, T>, Set<string>> {
-        return this._consumers;
+    readonly consumers = new Map<ContractsCrossRefConsumer<AnyContractsEnVer, T>, Set<string>>()
+
+    public toEnverPath() {
+        return this.owner.targetRevision.toPathPartStr() + '/' + this.name
     }
 
-    private readonly _consumers: Map<ContractsCrossRefConsumer<AnyContractsEnVer, T>, Set<string>>
+}
+
+export interface RefConsumerOption {
+    defaultIfAbsent: any//so that deploy will continue even producer is not deployed yet
+
+    trigger: 'no' | 'directly' //trigger consumer stack deployment on change?
+        | {
+        approvalRoles: string[],//todo: abstract the teams/IAM/approval process more
+        alarmLevel: 'email' | 'IM' | 'phone'
+    }
+
+    //todo:
+    type?:
+
+        'rpc' //sync request/ resp
+        | 'push'//fire and forget
+        | 'pull/polling'//while(true) get...
+        | 'pubsub'//todo
+        | 'queue'//todo
+    //todo:
+    schemaValidator?: ContractsCrossRefConsumer<AnyContractsEnVer, AnyContractsEnVer>
 }
 
 export class ContractsCrossRefConsumer<C extends AnyContractsEnVer, P extends AnyContractsEnVer> extends Construct {
 
-    constructor(scope: C, id: string, producer: ContractsCrossRefProducer<P>, options: {
-        defaultIfAbsent: any,
-        triggerOnChange: boolean//trigger consumer stack deployment on change
-    } = {triggerOnChange: true, defaultIfAbsent: '__dummy'}) {
+    constructor(scope: C, id: string, producer: ContractsCrossRefProducer<P>, options: RefConsumerOption
+        = {trigger: 'directly', defaultIfAbsent: '__dummy'}) {
         super(scope, id);
         if (!producer.consumers.has(this)) {
             producer.consumers.set(this, new Set())
@@ -56,10 +99,7 @@ export class ContractsCrossRefConsumer<C extends AnyContractsEnVer, P extends An
         return this._producer
     }
 
-    private readonly _options: {
-        defaultIfAbsent: any,
-        triggerOnChange: boolean//trigger consumer stack deployment on change
-    } | undefined = undefined
+    private readonly _options: RefConsumerOption
 
     public get options() {
         return this._options

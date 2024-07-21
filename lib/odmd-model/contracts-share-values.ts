@@ -13,10 +13,12 @@ export class ContractsShareIn extends Construct {
 
     private readonly _refConsumers: ContractsCrossRefConsumer<AnyContractsEnVer, AnyContractsEnVer>[]
     private readonly _cs: CustomResource
-    private readonly _rtData: { [name: string]: string } = {}
+    private readonly _rtData: { [name: string]: any } = {}
+    public readonly producerEnver: AnyContractsEnVer
+    private static readonly SHARE_VERSIONS = "share..version";
 
     constructor(scope: Stack, consumerBuildId: string, refConsumers: ContractsCrossRefConsumer<AnyContractsEnVer, AnyContractsEnVer>[]) {
-        super(scope, 'odmd-share-in' + consumerBuildId + refConsumers[0].producer.owner.targetRevision);
+        super(scope, 'odmd-share-in' + consumerBuildId + refConsumers[0].producer.owner.targetRevision.toPathPartStr());
 
         let tmp: AnyContractsEnVer | undefined = undefined;
         refConsumers.forEach(c => {
@@ -25,7 +27,7 @@ export class ContractsShareIn extends Construct {
             }
             tmp = c.producer.owner
         })
-        const prdcrEnvr = tmp! as AnyContractsEnVer;
+        this.producerEnver = tmp! as AnyContractsEnVer;
         this._refConsumers = refConsumers;
 
         const serviceToken = Fn.importValue(GET_SHARE_THRU_SSM_PROVIDER_NAME(consumerBuildId, scope.region, scope.account));
@@ -34,8 +36,8 @@ export class ContractsShareIn extends Construct {
             serviceToken,
             resourceType: 'Custom::InputFromCentralSSM',
             properties: {
-                from_build_id: prdcrEnvr.owner.buildId,
-                from_target_rev: prdcrEnvr.targetRevision,
+                from_build_id: this.producerEnver.owner.buildId,
+                from_target_rev: this.producerEnver.targetRevision,
                 share_names: 'throw error now!'
             }
         })
@@ -46,7 +48,8 @@ export class ContractsShareIn extends Construct {
         const nameObj = {} as { [k: string]: any }
         this._refConsumers.forEach(c => {
             nameObj[c.producer.name] = c.options
-            this._rtData[ c.producer.name ] = this._cs.getAttString(c.producer.name)
+            this._rtData[c.producer.name] = this._cs.getAttString(c.producer.name)
+            this._rtData[ContractsShareIn.SHARE_VERSIONS] = this._cs.getAttString(ContractsShareIn.SHARE_VERSIONS)
         })
 
         // @ts-ignore
@@ -65,30 +68,12 @@ export class ContractsShareIn extends Construct {
         }
     }
 
-    /*
-        * const handler = {
-        get(target: any, prop: string) {
-            if (prop in target) {
-                return target[prop];
-            } else {
-                throw new Error(`Property ${prop} does not exist.`);
-            }
-        }
-    };
-
-    const createSafeObject = <T extends object>(obj: T): T => {
-        return new Proxy(obj, handler);
-    };
-
-    // Example usage
-    const myObject = { a: 1, b: 2 };
-    const safeObject = createSafeObject(myObject);
-
-    console.log(safeObject.a); // works fine, prints 1
-    console.log(safeObject.c); // throws an error
-    */
     public getShareValue(refProducer: ContractsCrossRefProducer<AnyContractsEnVer>) {
-        return this._rtData[refProducer.name]
+        return this._rtData[refProducer.name] as string
+    }
+
+    public getInVersions() {
+        return this._rtData[ContractsShareIn.SHARE_VERSIONS] as string
     }
 }
 
@@ -101,6 +86,13 @@ export class ContractsShareOut extends Construct {
             throw new Error("odmd-share-out input size is 0 can't proceed !")
         }
 
+        if (scope.account == OndemandContracts.inst.accounts.central) {
+            throw new Error("OdmdShareOut is not for central")
+        }
+        if (!process.env[OndemandContracts.REV_REF_name]) {
+            throw new Error("OdmdShareOut is for")
+        }
+
         let tmp: AnyContractsEnVer | undefined = undefined;
         let refProducers = Array.from(refToVal.keys());
         refProducers.forEach(p => {
@@ -109,7 +101,9 @@ export class ContractsShareOut extends Construct {
             }
             tmp = p.owner
         })
-        const produEnvr = tmp! as AnyContractsEnVer;
+        if (refProducers.find(p => p.name == 'ServiceToken')) {
+            throw new Error("ServiceToken is reserved for OdmdShareOut")
+        }
 
         refProducers.reduce((p, v) => {
             if (p.has(v.name)) {
@@ -120,17 +114,14 @@ export class ContractsShareOut extends Construct {
         }, new Map<string, ContractsCrossRefProducer<AnyContractsEnVer>>)
 
 
+        const produEnvr = tmp! as AnyContractsEnVer;
         const serviceToken = Fn.importValue(GET_SHARE_THRU_SSM_PROVIDER_NAME(produEnvr.owner.buildId, scope.region, scope.account));
 
         const properties = {} as { [n: string]: string | number }
 
-        if (refProducers.find(p => p.name == 'ServiceToken')) {
-            throw new Error("ServiceToken is reserved for OdmdShareOut")
-        }
-
-        const found = refProducers.find(p => p.name == OndemandContracts.REV_REF_name);
+        const found = refProducers.find(p => p.name.startsWith(OndemandContracts.REV_REF_name));
         if (found) {
-            throw new Error(`${found.name} is reserved for OdmdShareOut`)
+            throw new Error(`${found.name} is illegal/reserved for OdmdShareOut`)
         }
         refToVal.forEach((val, ref) => {
             if (properties[ref.name]) {
@@ -139,14 +130,8 @@ export class ContractsShareOut extends Construct {
             properties[ref.name] = val
         })
 
-        if (scope.account == OndemandContracts.inst.accounts.central) {
-            throw new Error("OdmdShareOut is not for central")
-        }
-        if (!process.env[OndemandContracts.REV_REF_name]) {
-            throw new Error("OdmdShareOut is for")
-        }
-
-        properties[OndemandContracts.REV_REF_name] = produEnvr.targetRevision.toString()
+        properties[OndemandContracts.REV_REF_name] = produEnvr.targetRevision.toPathPartStr()
+        properties[OndemandContracts.REV_REF_name + '...'] = scope.stackId
 
         new CustomResource(this, 'share-values', {
             serviceToken,

@@ -29,13 +29,13 @@ export class OdmdBuildDefaultVpcRds extends ContractsBuild<ContractsEnverCdk> {
             this.envers.find(e => e.targetAWSAccountID == client.targetAWSAccountID
                 && e.targetAWSRegion == client.targetAWSRegion && e.vpcConfig.vpcName == vpc.vpcName)
         if (rt) {
+            rt.addClient(client)
             return rt
         }
 
-        const accKey = Object.entries(OndemandContracts.inst.accounts).find(([k, v]) => v == client.targetAWSAccountID)![0] as keyof Accounts
-
-        rt = new ContractsEnverCdkDefaultVpc(this, client.targetAWSRegion, accKey, vpc);
+        rt = new ContractsEnverCdkDefaultVpc(this, client.targetAWSRegion, OndemandContracts.inst.getAccountName(client.targetAWSAccountID), vpc);
         this.envers.push(rt)
+        rt.addClient(client)
         return rt;
     }
 

@@ -1,23 +1,23 @@
 {
-  "name": "@ondemandenv/odmd-build-contracts",
-  "version": "1.0.0",
+  "name": "@ondemandenv/odmd-contracts",
+  "version": "0.1.89-k",
   "main": "index.js",
-  "repository": "https://github.com/ondemandenv/odmd-build-contracts.git",
+  "repository": "https://github.com/ondemandenv/ONDEMAND_APP_contracts.git",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
   },
   "dependencies": {
-    "aws-cdk-lib": "2.142.1",
+    "aws-cdk-lib": "2.149.0",
     "constructs": "^10.0.0",
-    "esbuild": "^0.20.1",
+    "esbuild": "^0.23.0",
     "js-base64": "^3.7.7",
     "js-yaml": "^4.1.0",
     "source-map-support": "^0.5.21",
     "ts-md5": "^1.3.1",
-    "cdk8s-plus-28": "2.3.4"
+    "cdk8s-plus-29": "2.3.13"
   },
   "devDependencies": {
-    "aws-cdk": "2.142.1",
+    "aws-cdk": "2.149.0",
     "@types/node": "^20.11.20",
     "@types/jest": "^29.5.12",
     "@types/js-yaml": "^4.0.9",
@@ -25,24 +25,23 @@
     "ts-node": "^10.9.2",
     "typescript": "~5.1.6",
     "typescript-json-schema": "^0.63.0",
-    "cdk8s-cli": "2.198.65",
+    "cdk8s": "2.68.86",
+    "cdk8s-cli": "^2.198.175",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.2"
   },
   "peerDependencies": {
     "constructs": "^10.0.0",
-    "aws-cdk-lib": "2.142.1"
+    "aws-cdk-lib": "2.149.0"
   },
   "scripts": {
     "build": "tsc --build",
     "watch": "tsc --build -w",
     "clean": "tsc --build --clean",
-    "test": "tsc --build --clean && tsc --build && cross-env target_rev_ref=b:main CDK_DEFAULT_ACCOUNT=123 CDK_DEFAULT_REGION=us-west-1 CDK_CLI_VERSION=2.142.1  jest",
+    "test": "tsc --build --clean && tsc --build && cross-env target_rev_ref=b..odmdSbxUsw1 CDK_DEFAULT_ACCOUNT=123 CDK_DEFAULT_REGION=us-west-1 CDK_CLI_VERSION=2.149.0  jest",
     "buildversion": "tsc --build && npm version patch",
-    "pubpub": "npm publish --access=public",
+    "pubpub": "npm run test && npm publish --access=public",
     "login": "npm login",
-    "whoami": "npm whoami",
-    "ts-debug": "ts-node tmp-exe.ts",
     "cdk8s-import": "cdk8s import/* && ts-node imports/remove-readonly.ts*/"
   }
 }
