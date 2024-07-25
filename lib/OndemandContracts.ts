@@ -15,7 +15,7 @@ import {SampleSpringOpenApi3Cdk} from "./repos/sample-spring-openapi3/sample-spr
 import {SampleSpringOpenApi3Img} from "./repos/sample-spring-openapi3/sample-spring-open-api3-img";
 
 
-type GithubRepos = {
+export type GithubRepos = {
     __contracts: GithubRepo
     __eks: GithubRepo
     __networking: GithubRepo
@@ -73,7 +73,6 @@ export class OndemandContracts extends Construct {
 
     public readonly odmdBuilds: Array<ContractsBuild<AnyContractsEnVer>>;
 
-    public readonly buildIdToRevRefs: Map<string, SRC_Rev_REF[]> | undefined = undefined
 
     private static _inst: OndemandContracts;
     public static get inst() {
@@ -161,7 +160,6 @@ export class OndemandContracts extends Construct {
 
             }
         }
-        this.buildIdToRevRefs = buildIdToRevRefs
 
         this.allAccounts = Object.values(this.accounts)
         this.odmdConfigOdmdContractsNpm = new OdmdConfigOdmdContractsNpm(this)
