@@ -35,9 +35,10 @@ export interface IContractsEnver extends IConstruct {
 
     // getSharedValue(stack: Stack, refProducer: ContractsCrossRefProducer<AnyContractsEnVer>): string
 
-    readonly centralRepoSrcRoleName: string
-    readonly centralRepoSrcRolePath: string
-    readonly centralRepoSrcRoleArn: string
+    readonly centralRoleName: string
+    readonly centralRolePath: string
+    readonly centralRoleArn: string
+
     readonly buildRoleName: string
     readonly buildRolePath: string
     readonly buildRoleArn: string
@@ -108,16 +109,16 @@ export abstract class ContractsEnver<T extends ContractsBuild<ContractsEnver<T>>
     // } use OdmdNames.create with enver
 
 
-    public get centralRepoSrcRoleName(): string {
+    public get centralRoleName(): string {
         return `${this.owner.buildId}-${this.targetAWSRegion}${this.targetAWSAccountID}-centerRole`
     }
 
-    public get centralRepoSrcRolePath(): string {
+    public get centralRolePath(): string {
         return `/${this.owner.buildId}/`
     }
 
-    public get centralRepoSrcRoleArn(): string {
-        return `arn:aws:iam::${OndemandContracts.inst.accounts.central}:role${this.centralRepoSrcRolePath}${this.centralRepoSrcRoleName}`;
+    public get centralRoleArn(): string {
+        return `arn:aws:iam::${OndemandContracts.inst.accounts.central}:role${this.centralRolePath}${this.centralRoleName}`;
     }
 
     public get buildRoleName(): string {

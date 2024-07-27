@@ -1,6 +1,6 @@
 {
   "name": "@ondemandenv/odmd-contracts",
-  "version": "0.1.89-l",
+  "version": "0.1.89-m",
   "main": "index.js",
   "repository": "https://github.com/ondemandenv/ONDEMAND_APP_contracts.git",
   "publishConfig": {
