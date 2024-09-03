@@ -139,6 +139,9 @@ export abstract class ContractsEnver<T extends ContractsBuild<ContractsEnver<T>>
             // @ts-ignore
             newInst = new cf(this.owner, this.targetAWSAccountID, this.targetAWSRegion, rev) as IContractsEnver
         }
+        if (rev.origin != this.targetRevision) {
+            throw new Error(`org and gen enver's origin should be same`)
+        }
         return newInst
     }
 

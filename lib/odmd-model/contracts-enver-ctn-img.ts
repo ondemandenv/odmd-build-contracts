@@ -3,6 +3,9 @@ import {ContractsBuild} from "./contracts-build";
 import {RepositoryProps} from "aws-cdk-lib/aws-ecr";
 import {ContractsCrossRefProducer} from "./contracts-cross-refs";
 
+/**
+ * this is implemented by central.
+ */
 export class CtnImgRefProducer extends ContractsCrossRefProducer<ContractsEnverCtnImg> {
 
     constructor(owner: ContractsEnverCtnImg, id: string, props?: {

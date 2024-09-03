@@ -1,5 +1,5 @@
 import {Construct} from "constructs";
-import {CustomResource, Fn, Stack} from "aws-cdk-lib";
+import {CfnParameter, CustomResource, Fn, Stack} from "aws-cdk-lib";
 import {ContractsCrossRefConsumer, ContractsCrossRefProducer} from "./contracts-cross-refs";
 import {OndemandContracts} from "../OndemandContracts";
 import {AnyContractsEnVer} from "./contracts-enver";
@@ -9,13 +9,17 @@ export function GET_SHARE_THRU_SSM_PROVIDER_NAME(ownerBuildId: string, ownerRegi
     return `odmd-ctl-${ownerBuildId}-${ownerRegion}-${ownerAccount}:share-thru-ssm-provider`.replace(/[^a-zA-Z0-9:-]/g, '-');
 }
 
+const SHARE_VERSIONS = "share..version";
+
 export class ContractsShareIn extends Construct {
 
     private readonly _refConsumers: ContractsCrossRefConsumer<AnyContractsEnVer, AnyContractsEnVer>[]
     private readonly _cs: CustomResource
     private readonly _rtData: { [name: string]: any } = {}
     public readonly producerEnver: AnyContractsEnVer
-    private static readonly SHARE_VERSIONS = "share..version";
+    public static readonly ODMD_NOW = 'ContractsShareInNow';
+
+    private readonly now: CfnParameter
 
     constructor(scope: Stack, consumerBuildId: string, refConsumers: ContractsCrossRefConsumer<AnyContractsEnVer, AnyContractsEnVer>[]) {
         super(scope, 'odmd-share-in' + consumerBuildId + refConsumers[0].producer.owner.targetRevision.toPathPartStr());
@@ -41,15 +45,26 @@ export class ContractsShareIn extends Construct {
                 share_names: 'throw error now!'
             }
         })
+
+        const odmdNowParam = scope.node.children.find(n => n instanceof CfnParameter && n.node.id == ContractsShareIn.ODMD_NOW) as CfnParameter;
+        this.now = odmdNowParam ?? new CfnParameter(scope, ContractsShareIn.ODMD_NOW, {
+            type: 'Number',
+            default: new Date().getTime()
+        })
+
         this.refresh();
     }
 
     private refresh() {
         const nameObj = {} as { [k: string]: any }
         this._refConsumers.forEach(c => {
+            if (this.producerEnver != c.producer.owner) {
+                throw new Error('?')
+            }
             nameObj[c.producer.name] = c.options
+            nameObj[ContractsShareIn.ODMD_NOW] = this.now.valueAsString
             this._rtData[c.producer.name] = this._cs.getAttString(c.producer.name)
-            this._rtData[ContractsShareIn.SHARE_VERSIONS] = this._cs.getAttString(ContractsShareIn.SHARE_VERSIONS)
+            this._rtData[SHARE_VERSIONS] = this._cs.getAttString(SHARE_VERSIONS)
         })
 
         // @ts-ignore
@@ -73,7 +88,7 @@ export class ContractsShareIn extends Construct {
     }
 
     public getInVersions() {
-        return this._rtData[ContractsShareIn.SHARE_VERSIONS] as string
+        return this._rtData[SHARE_VERSIONS] as string
     }
 }
 
@@ -90,11 +105,20 @@ export class ContractsShareOut extends Construct {
             throw new Error("OdmdShareOut is not for central")
         }
         if (!process.env[OndemandContracts.REV_REF_name]) {
-            throw new Error("OdmdShareOut is for")
+            throw new Error("OdmdShareOut is for ??")
+        }
+
+        const refProducers = Array.from(refToVal.keys());
+        const misMatchEnver = refProducers.find(
+            r => r.owner.targetRevision.toPathPartStr() != OndemandContracts.REV_REF_value
+        )
+
+        if (misMatchEnver) {
+            throw new Error(`producing some enver else's ref? 
+            ${OndemandContracts.REV_REF_value}  <> ${misMatchEnver.owner.targetRevision.toPathPartStr()}`)
         }
 
         let tmp: AnyContractsEnVer | undefined = undefined;
-        let refProducers = Array.from(refToVal.keys());
         refProducers.forEach(p => {
             if (tmp != undefined && tmp != p.owner) {
                 throw new Error(`One shareOut can only have one enver but you have two: ${tmp.node.path} <=>${p.owner.node.path}`)
@@ -114,8 +138,8 @@ export class ContractsShareOut extends Construct {
         }, new Map<string, ContractsCrossRefProducer<AnyContractsEnVer>>)
 
 
-        const produEnvr = tmp! as AnyContractsEnVer;
-        const serviceToken = Fn.importValue(GET_SHARE_THRU_SSM_PROVIDER_NAME(produEnvr.owner.buildId, scope.region, scope.account));
+        this.producingEnver = tmp! as AnyContractsEnVer;
+        const serviceToken = Fn.importValue(GET_SHARE_THRU_SSM_PROVIDER_NAME(this.producingEnver.owner.buildId, scope.region, scope.account));
 
         const properties = {} as { [n: string]: string | number }
 
@@ -130,13 +154,19 @@ export class ContractsShareOut extends Construct {
             properties[ref.name] = val
         })
 
-        properties[OndemandContracts.REV_REF_name] = produEnvr.targetRevision.toPathPartStr()
+        properties[OndemandContracts.REV_REF_name] = this.producingEnver.targetRevision.toPathPartStr()
         properties[OndemandContracts.REV_REF_name + '...'] = scope.stackId
 
-        new CustomResource(this, 'share-values', {
+        const cs = new CustomResource(this, 'share-values', {
             serviceToken,
             resourceType: 'Custom::OutputToCentralSSM',
             properties
         })
+
+        this.outVersions = cs.getAttString(SHARE_VERSIONS)
     }
+
+    public readonly producingEnver: AnyContractsEnVer
+
+    public readonly outVersions: string
 }

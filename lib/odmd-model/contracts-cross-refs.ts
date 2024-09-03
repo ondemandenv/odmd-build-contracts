@@ -29,7 +29,7 @@ export class ContractsCrossRefProducer<T extends AnyContractsEnVer> extends Cons
         }
 
         this.children = props?.children?.map((c, i) => {
-            return new ContractsCrossRefProducer(owner, id + '-' + c.pathPart ?? i, {
+            return new ContractsCrossRefProducer(owner, id + '-' + (c.pathPart ?? i), {
                 pathPart: c.pathPart,
                 parentPathPart: this.name,
                 children: c.children

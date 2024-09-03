@@ -2,17 +2,20 @@ import {Construct} from "constructs";
 import {OdmdConfigNetworking} from "./repos/__networking/odmd-config-networking";
 import {OdmdBuildEksCluster} from "./repos/__eks/odmd-build-eks-cluster";
 import {OdmdBuildDefaultVpcRds} from "./repos/_default-vpc-rds/odmd-build-default-vpc-rds";
-import {OdmdBuildSampleSpringCdk} from "./repos/sample/cdk/odmd-build-sample-spring-cdk";
-import {OdmdBuildSampleSpringImg} from "./repos/sample/spring-img/odmd-build-sample-spring-img";
 import {AnyContractsEnVer} from "./odmd-model/contracts-enver";
 import {ContractsBuild, GithubRepo, SRC_Rev_REF} from "./odmd-model/contracts-build";
 import {OdmdBuildDefaultKubeEks} from "./repos/_default-kube-eks/odmd-build-default-kube-eks";
 import {App, Aspects} from "aws-cdk-lib";
 import {ContractsAspect} from "./odmd-model/contracts-aspect";
-import {OdmdConfigOdmdContractsCdk} from "./repos/__contracts/odmd-build-odmd-contracts-cdk";
 import {OdmdConfigOdmdContractsNpm} from "./repos/__contracts/odmd-build-odmd-contracts-npm";
 import {SampleSpringOpenApi3Cdk} from "./repos/sample-spring-openapi3/sample-spring-open-api3-cdk";
 import {SampleSpringOpenApi3Img} from "./repos/sample-spring-openapi3/sample-spring-open-api3-img";
+import {CoffeeShopFoundationCdk} from "./repos/coffee-shop/coffee-shop-foundation-cdk";
+import {CoffeeShopOrderProcessorCdk} from "./repos/coffee-shop/coffee-shop-order-processor-cdk";
+import {CoffeeShopOrderManagerCdk} from "./repos/coffee-shop/coffee-shop-order-manager-cdk";
+import {execSync} from "child_process";
+import {OdmdBuildSampleSpringCdk} from "./repos/sample/cdk/odmd-build-sample-spring-cdk";
+import {OdmdBuildSampleSpringImg} from "./repos/sample/spring-img/odmd-build-sample-spring-img";
 
 
 export type GithubRepos = {
@@ -23,6 +26,9 @@ export type GithubRepos = {
     _defaultVpcRds: GithubRepo
     sample: GithubRepo
     sample1: GithubRepo
+    CoffeeShopFoundationCdk: GithubRepo
+    CoffeeShopOrderProcessorCdk: GithubRepo
+    CoffeeShopOrderManagerCdk: GithubRepo
 }
 
 export type Accounts = {
@@ -43,7 +49,6 @@ export class OndemandContracts extends Construct {
     static readonly STACK_PARAM_BUILD_SRC_REF = 'buildSrcRef'
     static readonly STACK_PARAM_BUILD_SRC_REPO = 'buildSrcRepo'
 
-    public readonly odmdConfigOdmdContractsCdk
     public readonly odmdConfigOdmdContractsNpm
 
     public readonly networking
@@ -58,6 +63,9 @@ export class OndemandContracts extends Construct {
     public readonly springRdsImg
     public readonly springOpen3Img
     public readonly springOpen3Cdk
+    public readonly coffeeShopFoundationCdk
+    public readonly coffeeShopOrderProcessorCdk
+    public readonly coffeeShopOrderManagerCdk
     // public readonly springRdsEksArgoConfig
 
 
@@ -85,8 +93,9 @@ export class OndemandContracts extends Construct {
         return process.env[this.REV_REF_name]!
     }
 
-    constructor(app: App, accountOverriding: Accounts | undefined = undefined,
-                srcReposOverriding: GithubRepos | undefined = undefined, buildIdToRevRefs: Map<string, SRC_Rev_REF[]> | undefined = undefined) {
+    constructor(app: App,
+                accountOverriding: Accounts | undefined = undefined,
+                srcReposOverriding: GithubRepos | undefined = undefined) {
         super(app, 'ondemandenv');
         if (OndemandContracts._inst) {
             throw new Error(`can't init twice`)
@@ -150,13 +159,16 @@ export class OndemandContracts extends Construct {
             this.githubRepos = JSON.parse(Buffer.from(process.env.ODMD_GH_REPOS, 'base64').toString("utf-8")) as GithubRepos
         } else {
             this.githubRepos = {
+                CoffeeShopFoundationCdk: {owner: 'odmd', name: 'CoffeeShopFoundation', ghAppInstallID: 1234},
+                CoffeeShopOrderManagerCdk: {owner: 'odmd', name: 'CoffeeShopOrderManager', ghAppInstallID: 1234},
+                CoffeeShopOrderProcessorCdk: {owner: 'odmd', name: 'CoffeeShopOrderProcessor', ghAppInstallID: 1234},
                 __contracts: {owner: 'odmd', name: 'contracts', ghAppInstallID: 1234},
                 __eks: {owner: 'odmd', name: 'eks', ghAppInstallID: 1234},
                 __networking: {owner: 'odmd', name: 'networking', ghAppInstallID: 1234},
                 _defaultKubeEks: {owner: 'odmd', name: 'defaultKubeEks', ghAppInstallID: 1234},
                 _defaultVpcRds: {owner: 'odmd', name: 'defaultVpcRds', ghAppInstallID: 1234},
                 sample: {owner: 'odmd', name: 'sample', ghAppInstallID: 1234},
-                sample1: {owner: 'odmd', name: 'sample1', ghAppInstallID: 1234},
+                sample1: {owner: 'odmd', name: 'sample1', ghAppInstallID: 1234}
 
             }
         }
@@ -173,14 +185,14 @@ export class OndemandContracts extends Construct {
         this.DEFAULTS_SVC = [this.defaultVpcRds, this.defaultEcrEks] as ContractsBuild<AnyContractsEnVer>[]
 
         this.springRdsImg = new OdmdBuildSampleSpringImg(this)
-        this.odmdConfigOdmdContractsCdk = new OdmdConfigOdmdContractsCdk(this)
         this.springRdsCdk = new OdmdBuildSampleSpringCdk(this)
         this.springOpen3Img = new SampleSpringOpenApi3Img(this)
         this.springOpen3Cdk = new SampleSpringOpenApi3Cdk(this)
-        // this.springRdsEksArgoConfig = new OdmdBuildSampleSpringEksArgo(this)
+        this.coffeeShopFoundationCdk = new CoffeeShopFoundationCdk(this)
+        this.coffeeShopOrderProcessorCdk = new CoffeeShopOrderProcessorCdk(this)
+        this.coffeeShopOrderManagerCdk = new CoffeeShopOrderManagerCdk(this)
 
         this.odmdBuilds = [
-            this.odmdConfigOdmdContractsCdk,
             this.odmdConfigOdmdContractsNpm,
             this.networking,
             this.eksCluster,
@@ -190,19 +202,17 @@ export class OndemandContracts extends Construct {
             this.springRdsCdk,
             this.springOpen3Img,
             this.springOpen3Cdk,
-            // this.springRdsEksArgoConfig,
+            this.coffeeShopFoundationCdk,
+            this.coffeeShopOrderProcessorCdk,
+            this.coffeeShopOrderManagerCdk
         ]
         if (new Set(this.odmdBuilds).size != this.odmdBuilds.length) {
             throw new Error('duplicated envers?!')
         }
 
-        if (!process.env[OndemandContracts.REV_REF_name]) {
-            throw new Error(`have to have process.env.${OndemandContracts.REV_REF_name}!`)
-        }
         if (!process.env.CDK_CLI_VERSION) {
             throw new Error("have to have process.env.CDK_CLI_VERSION!")
         }
-
 
         const buildRegion = process.env.CDK_DEFAULT_REGION;
         let buildAccount: string;
@@ -218,5 +228,53 @@ export class OndemandContracts extends Construct {
         if (!buildRegion || !buildAccount) {
             throw new Error("buildRegion>" + buildRegion + "; buildAccount>" + buildAccount)
         }
+    }
+
+    getTargetEnver() {
+        const buildId = process.env['target_build_id']
+
+        //target_rev_ref=b..master-_b..ta
+        const enverRef = OndemandContracts.REV_REF_value
+        if (!buildId || !enverRef) {
+            throw new Error(`if (!buildId || !enverRef): ${buildId} || ${enverRef}`);
+        }
+        const b = this.odmdBuilds.find(b => b.buildId == buildId)
+        if (!b) {
+            throw new Error(`can't find build by id:${buildId}`)
+        }
+
+        const found = b.envers.find(e => e.targetRevision.toPathPartStr() == enverRef)
+        if (found) {
+            if (found.targetRevision.type == "b") {
+                const currentBranch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim()
+                if (currentBranch != found.targetRevision.value) {
+                    console.warn(`currentBranch[ ${currentBranch} ]!= found.targetRevision.value[ ${found.targetRevision.value} ]`)
+                }
+            } else {
+                const currentTags = execSync('git tag --points-at HEAD').toString().trim().split('\n')
+                if (!currentTags.find(t => t == found.targetRevision.value)) {
+                    console.warn(`currentTags[ ${currentTags.join()} ] not including found.targetRevision.value[ ${found.targetRevision.value} ]`)
+                }
+            }
+            return found
+        }
+
+        if (!enverRef.includes('-_')) {
+            console.log(`${enverRef} not found `)
+            return undefined
+        }
+        const idx = enverRef.indexOf('-_')
+        const orgEnver = b.envers.find(e => e.targetRevision.toPathPartStr() == enverRef.substring(0, idx))!
+
+        const nwEnverRevref = enverRef.substring(idx + 2)
+
+        const nwEnver = orgEnver.generateDynamicEnver(new SRC_Rev_REF(
+            nwEnverRevref.startsWith('b..') ? 'b' : 't',
+            nwEnverRevref.substring(3), orgEnver.targetRevision
+        ))
+
+        b.envers.push(nwEnver)
+
+        return nwEnver
     }
 }

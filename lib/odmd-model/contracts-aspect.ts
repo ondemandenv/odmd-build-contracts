@@ -1,7 +1,7 @@
 import {CfnOutput, CfnParameter, IAspect, NestedStack, Stack} from "aws-cdk-lib";
 import {IConstruct} from "constructs";
 import {OndemandContracts} from "../OndemandContracts";
-import {ContractsShareIn} from "./contracts-share-values";
+import {ContractsShareIn, ContractsShareOut} from "./contracts-share-values";
 
 export class ContractsAspect implements IAspect {
     visit(node: IConstruct): void {
@@ -42,11 +42,6 @@ Debugging Challenges: Errors in nested stacks can be harder to diagnose because 
                 description: 'ODMD_BUILD'
             })
 
-            new CfnParameter(s, OndemandContracts.STACK_PARAM_BUILD_SRC_REV, {
-                type: 'String',
-                default: '',
-                description: 'BUILD_SRC_REV'
-            })
 
             new CfnParameter(s, OndemandContracts.STACK_PARAM_BUILD_SRC_REF, {
                 type: 'String',
@@ -54,22 +49,62 @@ Debugging Challenges: Errors in nested stacks can be harder to diagnose because 
                 description: 'BUILD_SRC_REF'
             })
 
-            const odmdShareVersionMapOut = new Map<string, any>(
-                s.node.findAll()
-                    .filter(n => n instanceof ContractsShareIn)
-                    .map(n => n as ContractsShareIn)
-                    .map(si =>
-                        [si.producerEnver.owner.buildId + '/' + si.producerEnver.targetRevision.toPathPartStr(), si.getInVersions()]
-                    )
-            )
-
-            if (odmdShareVersionMapOut.size > 0) {
-                new CfnOutput(s, 'odmdShareVersionMapOut', {
-                    key: 'odmdShareVersionMapOut',
-                    value: JSON.stringify(Object.fromEntries(odmdShareVersionMapOut))
+            let odmdNowParam = s.node.children.find(n => n instanceof CfnParameter && n.node.id == ContractsShareIn.ODMD_NOW) as CfnParameter;
+            if (!odmdNowParam) {
+                odmdNowParam = new CfnParameter(s, ContractsShareIn.ODMD_NOW, {
+                    type: 'Number',
+                    default: new Date().getTime()
                 })
             }
+            const buildSrcRevParam = new CfnParameter(s, OndemandContracts.STACK_PARAM_BUILD_SRC_REV, {
+                type: 'String',
+                default: '',
+                description: 'BUILD_SRC_REV'
+            })
 
+            new CfnOutput(s, ContractsShareIn.ODMD_NOW + '-out', {
+                key: ContractsShareIn.ODMD_NOW,
+                value: buildSrcRevParam.valueAsString + '-' + odmdNowParam.valueAsString
+            })
+
+            this.shareInVers(s);
+            this.shareOutVers(s);
+        }
+    }
+
+    private shareOutVers(s: Stack) {
+        const odmdShareOutVersionMapOut = new Map<string, any>(
+            s.node.findAll()
+                .filter(n => n instanceof ContractsShareOut)
+                .map(n => n as ContractsShareOut)
+                .map(so =>
+                    [so.producingEnver.owner.buildId + '/' + so.producingEnver.targetRevision.toPathPartStr(), so.outVersions]
+                )
+        )
+        if (odmdShareOutVersionMapOut.size > 0) {
+            new CfnOutput(s, 'odmdShareOutVersionMapOut', {
+                key: 'odmdShareOutVersionMapOut',
+                value: JSON.stringify(Object.fromEntries(odmdShareOutVersionMapOut))
+            })
+
+        }
+    }
+
+    private shareInVers(s: Stack) {
+        const odmdShareInVersionMapOut = new Map<string, any>(
+            s.node.findAll()
+                .filter(n => n instanceof ContractsShareIn)
+                .map(n => n as ContractsShareIn)
+                .map(si =>
+                    [si.producerEnver.owner.buildId + '/' + si.producerEnver.targetRevision.toPathPartStr(), si.getInVersions()]
+                )
+        )
+
+        if (odmdShareInVersionMapOut.size > 0) {
+            new CfnOutput(s, 'odmdShareInVersionMapOut', {
+                key: 'odmdShareInVersionMapOut',
+                value: JSON.stringify(Object.fromEntries(odmdShareInVersionMapOut))
+            })
         }
     }
 }

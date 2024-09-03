@@ -41,25 +41,6 @@ export abstract class ContractsBuild<T extends ContractsEnver<ContractsBuild<T>>
         ContractsBuild.CENTRAL_TO_INST.set(this.constructor as CentralConfigConstr, this)
     }
 
-
-    private _dynamicEnvers: Array<T>
-    public get dynamicEnvers(): Array<T> {
-        return this._dynamicEnvers;
-    }
-
-    public refreshDynamicEnvers(rrefs: SRC_Rev_REF[]) {
-        this._dynamicEnvers = rrefs.map(rrf => {
-            if (!rrf.origin) {
-                throw new Error(`buildId ${this.buildId}, see ref:${rrf.toPathPartStr()} has no origin!`)
-            }
-            const orgEnver = this.envers.find(e => e.targetRevision.toPathPartStr() == rrf.origin?.toPathPartStr())
-            if (!orgEnver) {
-                throw new Error(`buildId ${this.buildId}, see ref:${rrf.toPathPartStr()} can't find origin! with$${rrf.origin}`)
-            }
-            return orgEnver.generateDynamicEnver(rrf) as T
-        })
-    }
-
     public readonly buildId: string
 
     readonly description?: string
@@ -106,9 +87,15 @@ export abstract class ContractsBuild<T extends ContractsEnver<ContractsBuild<T>>
     }
 
     public getEnverCommonAncestor() {
+        if (this.envers.length == 0) {
+            throw new Error('n/a')
+        }
         const paths = this.envers.filter(e =>
             e.targetRevision.origin == undefined).map(this.getPathToRoot)
         const shortestPathLength = Math.min(...paths.map(path => path.length));
+        if (shortestPathLength > 1000) {
+            throw new Error('n/a')
+        }
 
         let i = 0;
         for (; i < shortestPathLength; i++) {
@@ -169,6 +156,9 @@ export class SRC_Rev_REF {
         if (origin) {
             if (origin.origin) {
                 throw new Error(`Illegal origin: ${origin}, origin can't have origin`)
+            }
+            if (origin.value == this.value && origin.type == this.type) {
+                throw new Error(`type & value can not be same as origin :${origin.type}..${origin.value}`)
             }
         }
         this.origin = origin

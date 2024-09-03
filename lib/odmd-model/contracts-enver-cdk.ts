@@ -49,18 +49,13 @@ export class ContractsEnverCdk extends ContractsEnver<ContractsBuild<ContractsEn
      * stackname has to start with buildId name!!!
      * we need to know stack names to monitor, so no wildcard supported until we run cdk ls
      * Make sure it's consistent
+     *
+     * idempotent!
      */
     getRevStackNames(): Array<string> {
         const revStr = this.targetRevision.type == 'b' ? this.targetRevision.value : this.targetRevision.toPathPartStr();
         const rt = [`${this.owner.buildId}--${revStr}`];
         return rt.map(n => ContractsEnverCdk.SANITIZE_STACK_NAME(n))
-    }
-
-    generateDynamicEnver(rev: SRC_Rev_REF, newInst: IContractsEnver | undefined = undefined): IContractsEnver {
-        if (!newInst) {
-            newInst = new ContractsEnverCdk(this.owner, this.targetAWSAccountID, this.targetAWSRegion, rev) as IContractsEnver
-        }
-        return newInst
     }
 
     public static SANITIZE_STACK_NAME(n: string) {
